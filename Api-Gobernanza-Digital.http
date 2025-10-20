@@ -1,0 +1,6 @@
+@Api_Gobernanza_Digital_HostAddress = http://localhost:5296
+
+GET {{Api_Gobernanza_Digital_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
