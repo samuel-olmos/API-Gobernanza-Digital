@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "trLc2zKoHls=",
+  "dgSpecHash": "+1xBP5xHEnA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\Api-Gobernanza-Digital.csproj",
+  "projectFilePath": "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/Api-Gobernanza-Digital.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\Samu\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.9\\microsoft.aspnetcore.openapi.9.0.9.nupkg.sha512",
-    "C:\\Users\\Samu\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+    "/Users/luccagiordana/.nuget/packages/microsoft.aspnetcore.openapi/9.0.9/microsoft.aspnetcore.openapi.9.0.9.nupkg.sha512",
+    "/Users/luccagiordana/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
   ],
   "logs": []
 }

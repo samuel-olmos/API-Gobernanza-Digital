@@ -1,27 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\Api-Gobernanza-Digital.csproj": {}
+    "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/Api-Gobernanza-Digital.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\Api-Gobernanza-Digital.csproj": {
+    "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/Api-Gobernanza-Digital.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\Api-Gobernanza-Digital.csproj",
+        "projectUniqueName": "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/Api-Gobernanza-Digital.csproj",
         "projectName": "Api-Gobernanza-Digital",
-        "projectPath": "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\Api-Gobernanza-Digital.csproj",
-        "packagesPath": "C:\\Users\\Samu\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Samu\\Documents\\2do Año\\Programación II\\TP Integrador\\Api-Gobernanza-Digital\\obj\\",
+        "projectPath": "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/Api-Gobernanza-Digital.csproj",
+        "packagesPath": "/Users/luccagiordana/.nuget/packages/",
+        "outputPath": "/Users/luccagiordana/Documents/Universidad/Progra 2/Tp_Final/API-Gobernanza-Digital/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Samu\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/luccagiordana/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -40,7 +38,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net9.0": {
@@ -70,7 +68,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.202/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
