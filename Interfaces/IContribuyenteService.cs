@@ -9,5 +9,4 @@ public interface IContribuyenteService
     Contribuyente Create(Contribuyente contribuyente);
     Contribuyente? Update(int id, Contribuyente contribuyente);
     bool Delete(int id);
-    Contribuyente? GetByIdentificacion(string identificacion);
 }
