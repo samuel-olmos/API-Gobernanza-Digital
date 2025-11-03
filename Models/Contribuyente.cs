@@ -1,9 +1,15 @@
 namespace API_Gobernanza_Digital.Models;
 
+public enum TipoContribuyente
+{
+    Persona,
+    Sociedad
+}
+
 public class Contribuyente
 {
     public int Id { get; set; }
-    public TipoContribuyente Tipo { get; set; } = null!;
+    public TipoContribuyente Tipo { get; set; }
     public string NombreRazonSocial { get; set; } = null!;
     public string Identificacion { get; set; } = null!; // DNI-CUIT-Identificacion
     public string Domicilio { get; set; } = null!;
@@ -12,8 +18,3 @@ public class Contribuyente
     public List<Boleta> Boletas { get; set; } = new List<Boleta>();
 }
 
-enum class TipoContribuyente
-{
-    Persona,
-    Sociedad
-}
