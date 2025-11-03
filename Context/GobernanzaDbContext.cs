@@ -26,7 +26,9 @@ public class GobernanzaDbContext : DbContext
             entity.ToTable("Contribuyentes"); // Nombre de la tabla
             entity.HasKey(c => c.Id); // Clave Primaria
 
-            entity.Property(c => c.NombreORazonSocial).IsRequired().HasMaxLength(200);
+            entity.Property(c => c.Nombre).IsRequired().HasMaxLength(100);
+            entity.Property(c => c.Apellido).HasMaxLength(100);
+            entity.Property(c => c.RazonSocial).HasMaxLength(200);
             entity.Property(c => c.Identificacion).IsRequired().HasMaxLength(20);
             entity.Property(c => c.Email).IsRequired().HasMaxLength(100);
             entity.Property(c => c.Domicilio).HasMaxLength(250);
@@ -59,8 +61,8 @@ public class GobernanzaDbContext : DbContext
             entity.ToTable("Boletas");
             entity.HasKey(b => b.Id);
 
-            entity.Property(b => c.MontoTotal).IsRequired().HasColumnType("decimal(18, 2)");
-            entity.Property(b => c.CodigoPagoElectronico).IsRequired().HasMaxLength(100);
+            entity.Property(b => b.MontoTotal).IsRequired().HasColumnType("decimal(18, 2)");
+            entity.Property(b => b.CodigoPagoElectronico).IsRequired().HasMaxLength(100);
             entity.Property(b => b.FechaPago).IsRequired(false); // Permite nulos
         });
 
