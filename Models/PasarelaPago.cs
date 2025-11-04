@@ -1,3 +1,4 @@
+namespace API_Gobernanza_Digital.Models;
 public class PasarelaPago
 {
     public int Id { get; set; }
