@@ -1,7 +1,19 @@
+using API_Gobernanza_Digital.Interfaces;
+using API_Gobernanza_Digital.Context;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 
+Env.Load();
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<GobernanzaDbContext>(options =>
+    options.UseSqlServer(connectionString)
+);
 
 // Add services to the container.
 

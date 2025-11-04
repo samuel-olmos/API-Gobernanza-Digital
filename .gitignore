@@ -29,5 +29,6 @@
 **/*.log.*
 *.log
 *.db
+.env
 .vs/
 Publish/
