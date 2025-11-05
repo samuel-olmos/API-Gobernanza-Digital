@@ -132,7 +132,7 @@ public class BoletaService : IBoletaService
             };
 
             nuevasBoletas.Add(boleta);
-        }
+        } 
 
         if (nuevasBoletas.Any())
         {

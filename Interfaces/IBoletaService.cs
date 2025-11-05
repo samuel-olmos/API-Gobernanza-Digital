@@ -10,5 +10,4 @@ public interface IBoletaService
     Boleta Create(Boleta boleta);
     Boleta? Update(int id, Boleta boleta);
     bool Delete(int id);
-    Task<int> GenerarBoletasAsync(DateTime? fechaReferencia = null);
 }
