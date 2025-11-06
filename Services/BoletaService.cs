@@ -19,63 +19,6 @@ public class BoletaService : IBoletaService
         _context = context;
     }
 
-    public IEnumerable<Boleta> GetAll()
-    {
-        return _context.Boletas
-            .Include(b => b.Contribuyente)
-            .Include(b => b.Servicio)
-            .AsNoTracking()
-            .ToList();
-    }
-
-    public Boleta? GetById(int id)
-    {
-        return _context.Boletas
-            .Include(b => b.Contribuyente)
-            .Include(b => b.Servicio)
-            .FirstOrDefault(b => b.Id == id);
-    }
-
-    public Boleta Create(Boleta boleta)
-    {
-        // Generar código de pago si no existe
-        if (string.IsNullOrEmpty(boleta.CodigoPagoElectronico))
-        {
-            boleta.CodigoPagoElectronico = GenerarCodigoPago();
-        }
-
-        _context.Boletas.Add(boleta);
-        _context.SaveChanges();
-        return boleta;
-    }
-
-    public Boleta? Update(int id, Boleta boleta)
-    {
-        var existing = _context.Boletas.Find(id);
-        if (existing == null) return null;
-
-        existing.ContribuyenteId = boleta.ContribuyenteId;
-        existing.ServicioId = boleta.ServicioId;
-        existing.Periodo = boleta.Periodo;
-        existing.FechaVencimiento = boleta.FechaVencimiento;
-        existing.MontoTotal = boleta.MontoTotal;
-        existing.Estado = boleta.Estado;
-        existing.FechaPago = boleta.FechaPago;
-
-        _context.SaveChanges();
-        return existing;
-    }
-
-    public bool Delete(int id)
-    {
-        var existing = _context.Boletas.Find(id);
-        if (existing == null) return false;
-
-        _context.Boletas.Remove(existing);
-        _context.SaveChanges();
-        return true;
-    }
-
     public int GenerarBoletasPeriodo(string periodoFiscal)
     {
         // Validar formato período (yyyy/MM)
