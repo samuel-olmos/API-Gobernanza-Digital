@@ -86,11 +86,12 @@ public class BoletaService : IBoletaService
         }
 
         // Obtener todos los contribuyentes con sus servicios
+        // Nota: se eliminó el filtro por FechaInicio/FechaFin porque
+        // esos campos no existen en el modelo de ContribuyenteServicio
+        // en este proyecto y no son necesarios para la generación.
         var contribuyentesConServicios = _context.ContribuyenteServicios
             .Include(cs => cs.Contribuyente)
             .Include(cs => cs.Servicio)
-            .Where(cs => cs.FechaInicio <= periodo && 
-                   (cs.FechaFin == null || cs.FechaFin >= periodo))
             .ToList();
 
         if (!contribuyentesConServicios.Any())
@@ -170,6 +171,17 @@ public class BoletaService : IBoletaService
 
         _context.SaveChanges();
         return boletasVencidas.Count;
+    }
+
+    public Task<int> GenerarBoletasAsync(DateTime? fechaReferencia = null)
+    {
+        // El controlador puede llamar con una fecha nullable; si no se
+        // provee, usamos la fecha actual UTC. `GenerarBoletasPeriodo` espera
+        // un string con formato yyyy/MM.
+        var referencia = fechaReferencia ?? DateTime.UtcNow;
+        var periodoFiscal = referencia.ToString("yyyy/MM");
+        var cantidad = GenerarBoletasPeriodo(periodoFiscal);
+        return Task.FromResult(cantidad);
     }
 
     public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId)

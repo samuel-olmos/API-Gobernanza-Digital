@@ -10,4 +10,7 @@ public interface IBoletaService
     Boleta Create(Boleta boleta);
     Boleta? Update(int id, Boleta boleta);
     bool Delete(int id);
+    // Generar boletas para un período de referencia. Se deja nullable
+    // para que el servicio use la fecha actual si no se provee.
+    Task<int> GenerarBoletasAsync(DateTime? fechaReferencia = null);
 }
