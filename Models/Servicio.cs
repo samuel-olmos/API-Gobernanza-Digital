@@ -1,38 +1,16 @@
-namespace API_Gobernanza_Digital.Models;
-public enum FrecuenciaCobro
+namespace API_Gobernanza_Digital.Models
 {
-    Mensual,
-    Bimestral,
-    Trimestral,
-    Semestral,
-    Anual
-}
-public class Servicio
-{
-    public int Id { get; set; }
-    public string Nombre { get; set; }
-    public string? Descripcion { get; set; }
-    public FrecuenciaCobro Frecuencia { get; set; }
-    public decimal MontoBase { get; set; }
-
-    // Relaciones
-    public virtual ICollection<ContribuyenteServicio> ContribuyenteServicios { get; set; }
-    public virtual ICollection<Boleta> Boletas { get; set; }
-
-    public Servicio()
+    public class Servicio
     {
-        ContribuyenteServicios = new HashSet<ContribuyenteServicio>();
-        Boletas = new HashSet<Boleta>();
+        public int Id { get; set; }
+        public string Nombre { get; set; } = null!;
+        public string? Descripcion { get; set; }
+        public decimal MontoBase { get; set; }
+
+        // --- Relaciones (ACTUALIZADAS) ---
+        public int FrecuenciaId { get; set; } // FK a la tabla Frecuencia
+        public virtual Frecuencia Frecuencia { get; set; } = null!;
+        
+        public virtual ICollection<ContribuyenteServicio> ContribuyenteServicios { get; set; } = new HashSet<ContribuyenteServicio>();
     }
 }
-
-// public class Servicio
-// {
-//     public int Id { get; set; }
-//     public string NombreServicio { get; set; } = string.Empty;
-//     public string Descripcion { get; set; } = string.Empty;
-//     public FrecuenciaCobro FrecuenciaDeCobro { get; set; } = FrecuenciaCobro.Mensual;
-//     public float MontoBase { get; set; }
-//     public List<Contribuyente> Contribuyentes { get; set; }
-//     public List<Boleta> Boletas { get; set; }
-// }

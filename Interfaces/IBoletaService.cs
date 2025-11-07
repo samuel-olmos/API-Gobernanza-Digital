@@ -14,3 +14,5 @@ public interface IBoletaService
     // para que el servicio use la fecha actual si no se provee.
     Task<int> GenerarBoletasAsync(DateTime? fechaReferencia = null);
 }
+
+//
