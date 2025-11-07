@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using API_Gobernanza_Digital.Context;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
-using API_Gobernanza_Digital.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace API_Gobernanza_Digital.Services;
@@ -13,168 +12,141 @@ namespace API_Gobernanza_Digital.Services;
 public class BoletaService : IBoletaService
 {
     private readonly GobernanzaDbContext _context;
+    private readonly BoletaDbService _boletaDb;
 
     public BoletaService(GobernanzaDbContext context)
     {
         _context = context;
+        _boletaDb = new BoletaDbService(context);
     }
 
-    public int GenerarBoletasPeriodo(string periodoFiscal)
+    // CRUD
+    public IEnumerable<Boleta> GetAll() => _boletaDb.GetAll();
+    public Boleta? GetById(int id) => _boletaDb.GetById(id);
+
+    public Boleta Create(Boleta boleta)
     {
-        // Validar formato período (yyyy/MM)
-        if (!DateTime.TryParseExact(periodoFiscal + "/01", "yyyy/MM/dd", 
-            CultureInfo.InvariantCulture, DateTimeStyles.None, out var periodo))
-        {
-            throw new ArgumentException("Formato de período inválido. Use yyyy/MM");
-        }
-
-        // Obtener todos los contribuyentes con sus servicios
-        var contribuyentesConServicios = _context.ContribuyenteServicios
-            .Include(cs => cs.Contribuyente)
-            .Include(cs => cs.Servicio)
-            .Where(cs => cs.FechaInicio <= periodo && 
-                   (cs.FechaFin == null || cs.FechaFin >= periodo))
-            .ToList();
-
-        if (!contribuyentesConServicios.Any())
-        {
-            return 0;
-        }
-
-        // Verificar boletas existentes para este período
-        var boletasExistentes = _context.Boletas
-            .Where(b => b.Periodo.Year == periodo.Year && b.Periodo.Month == periodo.Month)
-            .Select(b => new { b.ContribuyenteId, b.ServicioId })
-            .ToHashSet();
-
-        var nuevasBoletas = new List<Boleta>();
-
-        foreach (var cs in contribuyentesConServicios)
-        {
-            // Verificar si debe generarse boleta según frecuencia
-            if (!DebeGenerarBoleta(cs.ServicioId, periodo, cs.Servicio.Frecuencia))
-            {
-                continue;
-            }
-
-            // Evitar duplicados
-            if (boletasExistentes.Contains(new { cs.ContribuyenteId, cs.ServicioId }))
-            {
-                continue;
-            }
-
-            var boleta = new Boleta
-            {
-                ContribuyenteId = cs.ContribuyenteId,
-                ServicioId = cs.ServicioId,
-                Periodo = periodo,
-                FechaVencimiento = CalcularFechaVencimiento(periodo, cs.Servicio.Frecuencia),
-                MontoTotal = cs.Servicio.MontoBase,
-                CodigoPagoElectronico = GenerarCodigoPago(),
-                Estado = EstadoBoleta.Pendiente
-            };
-
-            nuevasBoletas.Add(boleta);
-        } 
-
-        if (nuevasBoletas.Any())
-        {
-            _context.Boletas.AddRange(nuevasBoletas);
-            _context.SaveChanges();
-        }
-
-        return nuevasBoletas.Count;
+        if (string.IsNullOrEmpty(boleta.CodigoPagoElectronico))
+            boleta.CodigoPagoElectronico = GenerarCodigoPago();
+        return _boletaDb.Add(boleta);
     }
+
+    public Boleta? Update(int id, Boleta boleta) => _boletaDb.Update(id, boleta);
+    public bool Delete(int id) => _boletaDb.Delete(id);
+
+    public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId) => _boletaDb.GetByContribuyente(contribuyenteId);
+    public IEnumerable<Boleta> GetByEstado(EstadoBoleta estado) => _boletaDb.GetByEstado(estado);
+    public Boleta? GetByCodigoPago(string codigo) => _boletaDb.GetByCodigoPago(codigo);
 
     public bool MarcarComoPagada(int id, DateTime? fechaPago = null)
     {
-        var boleta = _context.Boletas.Find(id);
+        var boleta = _boletaDb.GetById(id);
         if (boleta == null) return false;
-
         boleta.Estado = EstadoBoleta.Pagada;
         boleta.FechaPago = fechaPago ?? DateTime.UtcNow;
-
-        _context.SaveChanges();
+        _boletaDb.Update(id, boleta);
         return true;
     }
 
     public int ActualizarBoletasVencidas()
     {
         var hoy = DateTime.UtcNow.Date;
-        var boletasVencidas = _context.Boletas
-            .Where(b => b.Estado == EstadoBoleta.Pendiente && 
-                       b.FechaVencimiento < hoy)
-            .ToList();
+        return _boletaDb.UpdateEstadosVencidos(hoy);
+    }
 
-        foreach (var boleta in boletasVencidas)
+    public async Task<int> GenerarBoletasPeriodo(DateTime? fechaReferencia = null)
+    {
+        // Normalizar fechaReferencia al día 10 del mes
+        var refDate = (fechaReferencia ?? DateTime.UtcNow).Date;
+        var periodoActual = new DateTime(refDate.Year, refDate.Month, 10);
+
+        // Obtener todos los servicios activos en el periodoActual
+        var activos = await _context.ContribuyenteServicios
+            .Include(cs=>cs.Servicio)
+            .Where(cs=>cs.FechaInicio <= periodoActual && (cs.FechaFin == null || cs.FechaFin >= periodoActual))
+            .AsNoTracking()
+            .ToListAsync();
+
+        if (activos.Count == 0) return 0;
+
+        var ultimas = _boletaDb.GetUltimasBoletasPorPar();
+        var nuevas = new List<Boleta>();
+
+        foreach (var cs in activos)
         {
-            boleta.Estado = EstadoBoleta.Vencida;
+            var key = (cs.ContribuyenteId, cs.ServicioId);
+            var periodos = DeterminarPeriodosAGenerar(cs.Servicio.Frecuencia, cs.FechaInicio, periodoActual, ultimas.GetValueOrDefault(key));
+
+            foreach (var periodo in periodos)
+            {
+                if (_boletaDb.ExisteBoleta(cs.ContribuyenteId, cs.ServicioId, periodo)) continue;
+
+                nuevas.Add(new Boleta {
+                    ContribuyenteId = cs.ContribuyenteId,
+                    ServicioId = cs.ServicioId,
+                    Periodo = periodo,
+                    FechaVencimiento = periodo.AddMonths(1),
+                    MontoTotal = cs.Servicio.MontoBase,
+                    CodigoPagoElectronico = GenerarCodigoPago(),
+                    Estado = EstadoBoleta.Pendiente
+                });
+            }
         }
 
-        _context.SaveChanges();
-        return boletasVencidas.Count;
+        if (nuevas.Count == 0) return 0;
+        _boletaDb.AddRange(nuevas);
+        _boletaDb.SaveChanges();
+        return nuevas.Count;
     }
 
-    public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId)
+    private List<DateTime> DeterminarPeriodosAGenerar(FrecuenciaCobro frecuencia, DateTime fechaInicio, DateTime periodoActual, DateTime? ultimoPeriodo)
     {
-        return _context.Boletas
-            .Include(b => b.Servicio)
-            .Where(b => b.ContribuyenteId == contribuyenteId)
-            .OrderByDescending(b => b.Periodo)
-            .AsNoTracking()
-            .ToList();
-    }
-
-    public IEnumerable<Boleta> GetByEstado(EstadoBoleta estado)
-    {
-        return _context.Boletas
-            .Include(b => b.Contribuyente)
-            .Include(b => b.Servicio)
-            .Where(b => b.Estado == estado)
-            .OrderBy(b => b.FechaVencimiento)
-            .AsNoTracking()
-            .ToList();
-    }
-
-    public Boleta? GetByCodigoPago(string codigo)
-    {
-        return _context.Boletas
-            .Include(b => b.Contribuyente)
-            .Include(b => b.Servicio)
-            .FirstOrDefault(b => b.CodigoPagoElectronico == codigo);
-    }
-
-    // Métodos privados auxiliares
-
-    private bool DebeGenerarBoleta(int servicioId, DateTime periodo, FrecuenciaCobro frecuencia)
-    {
-        var ultimaBoleta = _context.Boletas
-            .Where(b => b.ServicioId == servicioId)
-            .OrderByDescending(b => b.Periodo)
-            .FirstOrDefault();
-
-        if (ultimaBoleta == null)
-        {
-            return true; // Primera boleta del servicio
-        }
-
+        var periodos = new List<DateTime>();
         var mesesFrecuencia = ObtenerMesesPorFrecuencia(frecuencia);
-        var siguientePeriodo = ultimaBoleta.Periodo.AddMonths(mesesFrecuencia);
+        var mesesCobro = CalcularMesesCobro(frecuencia);
+        var inicio = new DateTime(fechaInicio.Year, fechaInicio.Month, 10);
 
-        return periodo >= siguientePeriodo;
-    }
+        DateTime primer;
+        if (ultimoPeriodo == null)
+            primer = ObtenerPrimerPeriodoCobro(inicio, mesesCobro);
+        else
+            primer = ultimoPeriodo.Value.AddMonths(mesesFrecuencia);
 
-    private static DateTime CalcularFechaVencimiento(DateTime periodo, FrecuenciaCobro frecuencia)
-    {
-        var meses = ObtenerMesesPorFrecuencia(frecuencia);
-        // Vence el último día del período
-        return periodo.AddMonths(meses).AddDays(-1);
-    }
-
-    private static int ObtenerMesesPorFrecuencia(FrecuenciaCobro frecuencia)
-    {
-        return frecuencia switch
+        var p = primer;
+        while (p <= periodoActual)
         {
+            if (mesesCobro.Contains(p.Month))
+                periodos.Add(p);
+            p = p.AddMonths(mesesFrecuencia);
+        }
+        return periodos;
+    }
+
+    private List<int> CalcularMesesCobro(FrecuenciaCobro frecuencia) =>
+        frecuencia switch {
+            FrecuenciaCobro.Mensual => new() {1,2,3,4,5,6,7,8,9,10,11,12},
+            FrecuenciaCobro.Bimestral => new() {1,3,5,7,9,11},
+            FrecuenciaCobro.Trimestral => new() {1,4,7,10},
+            FrecuenciaCobro.Semestral => new() {1,7},
+            FrecuenciaCobro.Anual => new() {1},
+            _ => new() {1}
+        };
+
+    private DateTime ObtenerPrimerPeriodoCobro(DateTime inicio, List<int> mesesCobro)
+    {
+        var mes = inicio.Month;
+        var año = inicio.Year;
+        var primerMes = mesesCobro.FirstOrDefault(m => m >= mes);
+        if (primerMes == 0)
+        {
+            primerMes = mesesCobro.First();
+            año++;
+        }
+        return new DateTime(año, primerMes, 10);
+    }
+
+    private static int ObtenerMesesPorFrecuencia(FrecuenciaCobro frecuencia) =>
+        frecuencia switch {
             FrecuenciaCobro.Mensual => 1,
             FrecuenciaCobro.Bimestral => 2,
             FrecuenciaCobro.Trimestral => 3,
@@ -182,11 +154,7 @@ public class BoletaService : IBoletaService
             FrecuenciaCobro.Anual => 12,
             _ => 1
         };
-    }
 
-    private static string GenerarCodigoPago()
-    {
-        // Genera código alfanumérico único de 12 caracteres
-        return Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
-    }
+    private static string GenerarCodigoPago() =>
+        Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
 }
