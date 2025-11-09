@@ -5,19 +5,24 @@ using System.Threading.Tasks;
 using API_Gobernanza_Digital.Context;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
+using API_Gobernanza_Digital.Services.DbServices;
 using Microsoft.EntityFrameworkCore;
 
 namespace API_Gobernanza_Digital.Services;
 
 public class BoletaService : IBoletaService
 {
+    private readonly PeriodoDbService _periodoDb;
     private readonly GobernanzaDbContext _context;
     private readonly BoletaDbService _boletaDb;
+    private readonly MontoService _montoService;
 
     public BoletaService(GobernanzaDbContext context)
     {
         _context = context;
         _boletaDb = new BoletaDbService(context);
+        _periodoDb = new PeriodoDbService(context);
+        _montoService = new MontoService();
     }
 
     // CRUD
@@ -69,125 +74,81 @@ public class BoletaService : IBoletaService
         return _boletaDb.UpdateEstadosVencidos(hoy);
     }
 
-    public async Task<int> GenerarBoletasPeriodo(DateTime? fechaReferencia = null)
+    public async Task<int> GenerarBoletasPeriodo(int idPeriodo)
     {
-        var refDate = (fechaReferencia ?? DateTime.UtcNow).Date;
-        var periodoActualFecha = new DateTime(refDate.Year, refDate.Month, 10);
+        var InstanciaPeriodoACobrar = await _periodoDb.GetByIdAsync(idPeriodo);
+        if (InstanciaPeriodoACobrar == null)
+            throw new InvalidOperationException($"Periodo con Id {idPeriodo} no encontrado.");
 
+        // Crear fecha solo con año/mes (día 1 por defecto para comparaciones)
+        var periodoACobrarFecha = new DateTime(InstanciaPeriodoACobrar.Anio, InstanciaPeriodoACobrar.Mes, 1);
+
+        // Validar que no sea un período futuro o el mes actual ya que debe terminar el mes para poder cobrarlo
+        if (periodoACobrarFecha > DateTime.UtcNow || (periodoACobrarFecha.Year == DateTime.UtcNow.Year && periodoACobrarFecha.Month >= DateTime.UtcNow.Month))
+            throw new InvalidOperationException("No se pueden generar boletas para un período futuro o para el mes actual.");
+
+        // Obtener suscripciones activas en el periodo
         var activos = await _context.ContribuyenteServicios
-            .Include(cs => cs.Servicio)
-                .ThenInclude(s => s.Frecuencia)
-            .Where(cs => cs.FechaInicio <= periodoActualFecha &&
-                        (cs.FechaFin == null || cs.FechaFin >= periodoActualFecha))
-            .AsNoTracking()
-            .ToListAsync();
-
+        .Include(cs => cs.Servicio)
+            .ThenInclude(s => s.Frecuencia)
+        .Where(cs => cs.FechaInicio <= periodoACobrarFecha &&
+                    (cs.FechaFin == null || cs.FechaFin >= periodoACobrarFecha))
+        .AsNoTracking()
+        .ToListAsync();
         if (activos.Count == 0) return 0;
 
-        var ultimas = _boletaDb.GetUltimasBoletasPorPar();
 
         var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente")
             ?? throw new InvalidOperationException("Estado 'Pendiente' no encontrado.");
 
         var nuevas = new List<Boleta>();
 
+        // Recorre las suscripciones activas y genera boletas según frecuencia
         foreach (var cs in activos)
         {
-            var ultimoPeriodoFecha = ultimas.GetValueOrDefault(cs.Id);
-            DateTime? ultimo = ultimoPeriodoFecha == default ? null : ultimoPeriodoFecha;
+            // Verifica si debe generarse boleta según frecuencia
+            if (!DebeGenerarBoleta(periodoACobrarFecha, cs.Servicio.Frecuencia))
+                continue;
 
-            var mesesIntervalo = cs.Servicio.Frecuencia.MesesIntervalo;
-            var periodos = DeterminarPeriodosAGenerar(mesesIntervalo, cs.FechaInicio, periodoActualFecha, ultimo);
+            // Verifica si ya existe una boleta para este par Suscripción + Período
+            if (_boletaDb.ExisteBoleta(cs.Id, InstanciaPeriodoACobrar.Id)) continue;
 
-            foreach (var fechaPeriodo in periodos)
+
+            // Se crea nueva boleta
+            var nuevaBoleta = new Boleta
             {
-                var periodoEntidad = await GetOrCreatePeriodo(fechaPeriodo);
-                if (_boletaDb.ExisteBoleta(cs.Id, periodoEntidad.Id)) continue;
+                ContribuyenteServicioId = cs.Id,
+                PeriodoId = InstanciaPeriodoACobrar.Id,
+                MontoTotal = _montoService.CalcularMontoTotal(cs),
+                EstadoId = estadoPendiente.Id,
+                CodigoPagoElectronico = GenerarCodigoPago(),
+                FechaEmision = DateTime.UtcNow,
 
-                nuevas.Add(new Boleta
-                {
-                    ContribuyenteServicioId = cs.Id,
-                    PeriodoId = periodoEntidad.Id,
-                    EstadoId = estadoPendiente.Id,
-                    MontoTotal = cs.Servicio.MontoBase,
-                    CodigoPagoElectronico = GenerarCodigoPago()
-                });
-            }
+                // No importa el momento en el que haya sido generada hay un plazo de 10 días para pagarla
+                FechaVencimiento = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day).AddDays(10)
+            };
+
+            // Agrega la nueva boleta a la lista
+            nuevas.Add(nuevaBoleta);
         }
 
-        if (nuevas.Count == 0) return 0;
-
+        // Marca el período como "Generadas = true" para saber que ya se generaron boletas de ese periodo y no volver a elegirlo
+        InstanciaPeriodoACobrar.Generadas = true;
+        _context.Periodos.Update(InstanciaPeriodoACobrar);
+        
+        // Guarda todas las nuevas boletas en la base de datos
         _boletaDb.AddRange(nuevas);
         _boletaDb.SaveChanges();
         return nuevas.Count;
     }
 
-    private List<DateTime> DeterminarPeriodosAGenerar(int mesesIntervalo, DateTime fechaInicio, DateTime periodoActual, DateTime? ultimoPeriodo)
+    private bool DebeGenerarBoleta(DateTime fechaPeriodo, Frecuencia frecuencia)
     {
-        var periodos = new List<DateTime>();
-        var mesesCobro = CalcularMesesCobro(mesesIntervalo);
-        var inicioNormalizado = new DateTime(fechaInicio.Year, fechaInicio.Month, 10);
-
-        DateTime primer = ultimoPeriodo == null
-            ? ObtenerPrimerPeriodoCobro(inicioNormalizado, mesesCobro)
-            : new DateTime(ultimoPeriodo.Value.Year, ultimoPeriodo.Value.Month, 10).AddMonths(mesesIntervalo);
-
-        var cursor = primer;
-        while (cursor <= periodoActual)
-        {
-            if (mesesCobro.Contains(cursor.Month))
-                periodos.Add(cursor);
-            cursor = cursor.AddMonths(mesesIntervalo);
-        }
-        return periodos;
+        // Se divide la frecuencia por el numero de mes, si el resto es 0, se genera la boleta
+        if (frecuencia.MesesIntervalo % fechaPeriodo.Month != 0) return false;
+        return true;
     }
-
-    private List<int> CalcularMesesCobro(int intervalo) =>
-        intervalo switch
-        {
-            <= 0 => new() { 1 },
-            1 => Enumerable.Range(1, 12).ToList(),
-            2 => new() { 1, 3, 5, 7, 9, 11 },
-            3 => new() { 1, 4, 7, 10 },
-            6 => new() { 1, 7 },
-            >= 12 => new() { 1 },
-            _ => Enumerable.Range(1, 12).Where(m => ((m - 1) % intervalo) == 0).ToList()
-        };
-
-    private DateTime ObtenerPrimerPeriodoCobro(DateTime inicio, List<int> mesesCobro)
-    {
-        var mes = inicio.Month;
-        var año = inicio.Year;
-        var primerMes = mesesCobro.FirstOrDefault(m => m >= mes);
-        if (primerMes == 0)
-        {
-            primerMes = mesesCobro.First();
-            año++;
-        }
-        return new DateTime(año, primerMes, 10);
-    }
-
-    private async Task<Periodo> GetOrCreatePeriodo(DateTime fechaPeriodo)
-    {
-        var anio = fechaPeriodo.Year;
-        var mes = fechaPeriodo.Month;
-        var fecha10 = new DateTime(anio, mes, 10);
-
-        var existente = await _context.Periodos.FirstOrDefaultAsync(p => p.Anio == anio && p.Mes == mes);
-        if (existente != null) return existente;
-
-        var nuevo = new Periodo
-        {
-            Anio = anio,
-            Mes = mes,
-            PeriodoFiscal = $"{anio:D4}/{mes:D2}",
-            FechaVencimiento = fecha10
-        };
-        _context.Periodos.Add(nuevo);
-        await _context.SaveChangesAsync();
-        return nuevo;
-    }
-
+    
     private static string GenerarCodigoPago() =>
         Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
 }

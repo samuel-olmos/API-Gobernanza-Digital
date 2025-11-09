@@ -6,6 +6,8 @@ namespace API_Gobernanza_Digital.Models
         public decimal MontoTotal { get; set; }
         public string CodigoPagoElectronico { get; set; } = null!;
         public DateTime? FechaPago { get; set; } // Nullable
+        public DateTime FechaEmision { get; set; }
+        public DateTime FechaVencimiento { get; set; }
 
         // --- Relaciones (ACTUALIZADAS) ---
         public int ContribuyenteServicioId { get; set; } // FK a la "suscripción"

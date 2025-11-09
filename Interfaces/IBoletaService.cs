@@ -15,7 +15,7 @@ namespace API_Gobernanza_Digital.Interfaces
         bool Delete(int id);
 
         // Métodos específicos
-        Task<int> GenerarBoletasPeriodo(DateTime? fechaReferencia = null);
+        Task<int> GenerarBoletasPeriodo(int idPeriodo);
         bool MarcarComoPagada(int id, DateTime? fechaPago = null);
         int ActualizarBoletasVencidas();
         IEnumerable<Boleta> GetByContribuyente(int contribuyenteId);
