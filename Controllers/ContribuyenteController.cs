@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
@@ -16,38 +18,39 @@ public class ContribuyenteController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Contribuyente>> GetAll()
+    public async Task<ActionResult<IEnumerable<Contribuyente>>> GetAll()
     {
-        return Ok(_service.GetAll());
+        var all = await _service.GetAllAsync();
+        return Ok(all);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<Contribuyente> GetById(int id)
+    public async Task<ActionResult<Contribuyente>> GetById(int id)
     {
-        var c = _service.GetById(id);
+        var c = await _service.GetByIdAsync(id);
         if (c == null) return NotFound();
         return Ok(c);
     }
 
     [HttpPost]
-    public ActionResult<Contribuyente> Create(Contribuyente contribuyente)
+    public async Task<ActionResult<Contribuyente>> Create(Contribuyente contribuyente)
     {
-        var created = _service.Create(contribuyente);
+        var created = await _service.CreateAsync(contribuyente);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public ActionResult<Contribuyente> Update(int id, Contribuyente contribuyente)
+    public async Task<ActionResult<Contribuyente>> Update(int id, Contribuyente contribuyente)
     {
-        var updated = _service.Update(id, contribuyente);
+        var updated = await _service.UpdateAsync(id, contribuyente);
         if (updated == null) return NotFound();
         return Ok(updated);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var ok = _service.Delete(id);
+        var ok = await _service.DeleteAsync(id);
         if (!ok) return NotFound();
         return NoContent();
     }

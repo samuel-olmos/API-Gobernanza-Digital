@@ -4,9 +4,9 @@ namespace API_Gobernanza_Digital.Interfaces;
 
 public interface IContribuyenteService
 {
-    IEnumerable<Contribuyente> GetAll();
-    Contribuyente? GetById(int id);
-    Contribuyente Create(Contribuyente contribuyente);
-    Contribuyente? Update(int id, Contribuyente contribuyente);
-    bool Delete(int id);
+    Task<IEnumerable<Contribuyente>> GetAllAsync();
+    Task<Contribuyente?> GetByIdAsync(int id);
+    Task<Contribuyente> CreateAsync(Contribuyente contribuyente);
+    Task<Contribuyente?> UpdateAsync(int id, Contribuyente contribuyente);
+    Task<bool> DeleteAsync(int id);
 }

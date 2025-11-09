@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
 using API_Gobernanza_Digital.Context;
-using Microsoft.EntityFrameworkCore
+using Microsoft.EntityFrameworkCore;
 
-namespace API_Gobernanza_Digital.Services.DbServices
+namespace API_Gobernanza_Digital.Services
 {
-    public class ServicioDbService
+    public class ServicioDbService : IServicioService
     {
         private readonly GobernanzaDbContext _context;
 
@@ -34,28 +34,31 @@ namespace API_Gobernanza_Digital.Services.DbServices
                 .ToListAsync();
         }
 
-        public async Task AddAsync(Servicio servicio)
+        public async Task<Servicio> CreateAsync(Servicio servicio)
         {
             await _context.Servicios.AddAsync(servicio);
             await _context.SaveChangesAsync();
+            return servicio;
         }
 
-        public async Task UpdateAsync(Servicio servicio)
+        public async Task<Servicio?> UpdateAsync(int id, Servicio servicio)
         {
-            var existing = await _context.Servicios.FindAsync(servicio.Id);
-            if (existing == null) return;
+            var existing = await _context.Servicios.FindAsync(id);
+            if (existing == null) return null;
             
             _context.Entry(existing).CurrentValues.SetValues(servicio);
             await _context.SaveChangesAsync();
+            return existing;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
             var existing = await _context.Servicios.FindAsync(id);
-            if (existing == null) return;
+            if (existing == null) return false;
             
             _context.Servicios.Remove(existing);
             await _context.SaveChangesAsync();
+            return true;
         }
     }
 }
