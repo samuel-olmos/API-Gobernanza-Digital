@@ -19,67 +19,6 @@ public class BoletaService : IBoletaService
         _context = context;
     }
 
-    public IEnumerable<Boleta> GetAll()
-    {
-        return _context.Boletas
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Include(b => b.Estado)
-            .AsNoTracking()
-            .ToList();
-    }
-
-    public Boleta? GetById(int id)
-    {
-        return _context.Boletas
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Include(b => b.Estado)
-            .FirstOrDefault(b => b.Id == id);
-    }
-
-    public Boleta Create(Boleta boleta)
-    {
-        // Generar código de pago si no existe
-        if (string.IsNullOrEmpty(boleta.CodigoPagoElectronico))
-        {
-            boleta.CodigoPagoElectronico = GenerarCodigoPago();
-        }
-
-        _context.Boletas.Add(boleta);
-        _context.SaveChanges();
-        return boleta;
-    }
-
-    public Boleta? Update(int id, Boleta boleta)
-    {
-        var existing = _context.Boletas.Find(id);
-        if (existing == null) return null;
-
-        // Actualizar los campos relevantes según el nuevo modelo
-        existing.ContribuyenteServicioId = boleta.ContribuyenteServicioId;
-        existing.PeriodoId = boleta.PeriodoId;
-        existing.EstadoId = boleta.EstadoId;
-        existing.MontoTotal = boleta.MontoTotal;
-        existing.CodigoPagoElectronico = boleta.CodigoPagoElectronico;
-        existing.FechaPago = boleta.FechaPago;
-
-        _context.SaveChanges();
-        return existing;
-    }
-
-    public bool Delete(int id)
-    {
-        var existing = _context.Boletas.Find(id);
-        if (existing == null) return false;
-
-        _context.Boletas.Remove(existing);
-        _context.SaveChanges();
-        return true;
-    }
-
     public int GenerarBoletasPeriodo(string periodoFiscal)
     {
         // Validar formato período (yyyy/MM)
