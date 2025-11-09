@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using API_Gobernanza_Digital.Context;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
-using API_Gobernanza_Digital.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace API_Gobernanza_Digital.Services;
@@ -13,48 +12,149 @@ namespace API_Gobernanza_Digital.Services;
 public class BoletaService : IBoletaService
 {
     private readonly GobernanzaDbContext _context;
+    private readonly BoletaDbService _boletaDb;
 
     public BoletaService(GobernanzaDbContext context)
     {
         _context = context;
+        _boletaDb = new BoletaDbService(context);
     }
 
-    public int GenerarBoletasPeriodo(string periodoFiscal)
+    // CRUD
+    public IEnumerable<Boleta> GetAll() => _boletaDb.GetAll();
+    public Boleta? GetById(int id) => _boletaDb.GetById(id);
+
+    public Boleta Create(Boleta boleta)
     {
-        // Validar formato período (yyyy/MM)
-        if (!DateTime.TryParseExact(periodoFiscal + "/01", "yyyy/MM/dd", 
-            CultureInfo.InvariantCulture, DateTimeStyles.None, out var periodo))
+        if (string.IsNullOrEmpty(boleta.CodigoPagoElectronico))
+            boleta.CodigoPagoElectronico = GenerarCodigoPago();
+        return _boletaDb.Add(boleta);
+    }
+
+    public Boleta? Update(int id, Boleta boleta) => _boletaDb.Update(id, boleta);
+    public bool Delete(int id) => _boletaDb.Delete(id);
+
+    public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId) => _boletaDb.GetByContribuyente(contribuyenteId);
+    public IEnumerable<Boleta> GetByEstado(EstadoBoleta estado) => _boletaDb.GetByEstado(estado);
+    public Boleta? GetByCodigoPago(string codigo) => _boletaDb.GetByCodigoPago(codigo);
+
+    public bool MarcarComoPagada(int id, DateTime? fechaPago = null)
+    {
+        var boleta = _boletaDb.GetById(id);
+        if (boleta == null) return false;
+        boleta.Estado = EstadoBoleta.Pagada;
+        boleta.FechaPago = fechaPago ?? DateTime.UtcNow;
+        _boletaDb.Update(id, boleta);
+        return true;
+    }
+
+    public int ActualizarBoletasVencidas()
+    {
+        var hoy = DateTime.UtcNow.Date;
+        return _boletaDb.UpdateEstadosVencidos(hoy);
+    }
+
+    public async Task<int> GenerarBoletasPeriodo(DateTime? fechaReferencia = null)
+    {
+        // Normalizar fechaReferencia al día 10 del mes
+        var refDate = (fechaReferencia ?? DateTime.UtcNow).Date;
+        var periodoActual = new DateTime(refDate.Year, refDate.Month, 10);
+
+        // Obtener todos los servicios activos en el periodoActual
+        var activos = await _context.ContribuyenteServicios
+            .Include(cs=>cs.Servicio)
+            .Where(cs=>cs.FechaInicio <= periodoActual && (cs.FechaFin == null || cs.FechaFin >= periodoActual))
+            .AsNoTracking()
+            .ToListAsync();
+
+        if (activos.Count == 0) return 0;
+
+        var ultimas = _boletaDb.GetUltimasBoletasPorPar();
+        var nuevas = new List<Boleta>();
+
+        foreach (var cs in activos)
         {
-            throw new ArgumentException("Formato de período inválido. Use yyyy/MM");
+            var key = (cs.ContribuyenteId, cs.ServicioId);
+            var periodos = DeterminarPeriodosAGenerar(cs.Servicio.Frecuencia, cs.FechaInicio, periodoActual, ultimas.GetValueOrDefault(key));
+
+            foreach (var periodo in periodos)
+            {
+                if (_boletaDb.ExisteBoleta(cs.ContribuyenteId, cs.ServicioId, periodo)) continue;
+
+                nuevas.Add(new Boleta {
+                    ContribuyenteId = cs.ContribuyenteId,
+                    ServicioId = cs.ServicioId,
+                    Periodo = periodo,
+                    FechaVencimiento = periodo.AddMonths(1),
+                    MontoTotal = cs.Servicio.MontoBase,
+                    CodigoPagoElectronico = GenerarCodigoPago(),
+                    Estado = EstadoBoleta.Pendiente
+                });
+            }
         }
 
-        // Simplified placeholder: por ahora no generamos boletas automáticamente.
-        // Esto permite ejecutar la aplicación y correr migraciones sin depender
-        // de lógica de negocio que aún puede cambiar. Implementar generación
-        // real si se desea en un paso posterior.
-        return 0;
+        if (nuevas.Count == 0) return 0;
+        _boletaDb.AddRange(nuevas);
+        _boletaDb.SaveChanges();
+        return nuevas.Count;
     }
 
-
-    public Task<int> GenerarBoletasAsync(DateTime? fechaReferencia = null)
+    private List<DateTime> DeterminarPeriodosAGenerar(FrecuenciaCobro frecuencia, DateTime fechaInicio, DateTime periodoActual, DateTime? ultimoPeriodo)
     {
-        // El controlador puede llamar con una fecha nullable; si no se
-        // provee, usamos la fecha actual UTC. `GenerarBoletasPeriodo` espera
-        // un string con formato yyyy/MM.
-        var referencia = fechaReferencia ?? DateTime.UtcNow;
-        var periodoFiscal = referencia.ToString("yyyy/MM");
-        var cantidad = GenerarBoletasPeriodo(periodoFiscal);
-        return Task.FromResult(cantidad);
+        var periodos = new List<DateTime>();
+        var mesesFrecuencia = ObtenerMesesPorFrecuencia(frecuencia);
+        var mesesCobro = CalcularMesesCobro(frecuencia);
+        var inicio = new DateTime(fechaInicio.Year, fechaInicio.Month, 10);
+
+        DateTime primer;
+        if (ultimoPeriodo == null)
+            primer = ObtenerPrimerPeriodoCobro(inicio, mesesCobro);
+        else
+            primer = ultimoPeriodo.Value.AddMonths(mesesFrecuencia);
+
+        var p = primer;
+        while (p <= periodoActual)
+        {
+            if (mesesCobro.Contains(p.Month))
+                periodos.Add(p);
+            p = p.AddMonths(mesesFrecuencia);
+        }
+        return periodos;
     }
 
-    // Nota: se quitaron varios métodos auxiliares específicos de la versión
-    // anterior (manejo por enums y cálculos de período). Para poder arrancar
-    // rápidamente y ejecutar migraciones, la lógica avanzada se implementará
-    // en una siguiente iteración según el nuevo diseño del modelo.
+    private List<int> CalcularMesesCobro(FrecuenciaCobro frecuencia) =>
+        frecuencia switch {
+            FrecuenciaCobro.Mensual => new() {1,2,3,4,5,6,7,8,9,10,11,12},
+            FrecuenciaCobro.Bimestral => new() {1,3,5,7,9,11},
+            FrecuenciaCobro.Trimestral => new() {1,4,7,10},
+            FrecuenciaCobro.Semestral => new() {1,7},
+            FrecuenciaCobro.Anual => new() {1},
+            _ => new() {1}
+        };
 
-    private static string GenerarCodigoPago()
+    private DateTime ObtenerPrimerPeriodoCobro(DateTime inicio, List<int> mesesCobro)
     {
-        // Genera código alfanumérico único de 12 caracteres
-        return Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        var mes = inicio.Month;
+        var año = inicio.Year;
+        var primerMes = mesesCobro.FirstOrDefault(m => m >= mes);
+        if (primerMes == 0)
+        {
+            primerMes = mesesCobro.First();
+            año++;
+        }
+        return new DateTime(año, primerMes, 10);
     }
+
+    private static int ObtenerMesesPorFrecuencia(FrecuenciaCobro frecuencia) =>
+        frecuencia switch {
+            FrecuenciaCobro.Mensual => 1,
+            FrecuenciaCobro.Bimestral => 2,
+            FrecuenciaCobro.Trimestral => 3,
+            FrecuenciaCobro.Semestral => 6,
+            FrecuenciaCobro.Anual => 12,
+            _ => 1
+        };
+
+    private static string GenerarCodigoPago() =>
+        Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
 }
