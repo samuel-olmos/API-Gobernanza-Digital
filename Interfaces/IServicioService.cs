@@ -4,9 +4,9 @@ namespace API_Gobernanza_Digital.Interfaces;
 
 public interface IServicioService
 {
-    IEnumerable<Servicio> GetAll();
-    Servicio? GetById(int id);
-    Servicio Create(Servicio servicio);
-    Servicio? Update(int id, Servicio servicio);
-    bool Delete(int id);
+    Task<IEnumerable<Servicio>> GetAllAsync();
+    Task<Servicio?> GetByIdAsync(int id);
+    Task<Servicio> CreateAsync(Servicio servicio);
+    Task<Servicio?> UpdateAsync(int id, Servicio servicio);
+    Task<bool> DeleteAsync(int id);
 }

@@ -16,38 +16,38 @@ public class ServicioController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Servicio>> GetAll()
+    public async Task<ActionResult<IEnumerable<Servicio>>> GetAllAsync()
     {
-        return Ok(_service.GetAll());
+        return Ok(await _service.GetAllAsync());
     }
 
     [HttpGet("{id}")]
-    public ActionResult<Servicio> GetById(int id)
+    public async Task<ActionResult<Servicio>> GetByIdAsync(int id)
     {
-        var s = _service.GetById(id);
+        var s = await _service.GetByIdAsync(id);
         if (s == null) return NotFound();
         return Ok(s);
     }
 
     [HttpPost]
-    public ActionResult<Servicio> Create(Servicio servicio)
+    public async Task<ActionResult<Servicio>> CreateAsync(Servicio servicio)
     {
-        var created = _service.Create(servicio);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        var created = await _service.CreateAsync(servicio);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public ActionResult<Servicio> Update(int id, Servicio servicio)
+    public async Task<ActionResult<Servicio>> UpdateAsync(int id, Servicio servicio)
     {
-        var updated = _service.Update(id, servicio);
+        var updated = await _service.UpdateAsync(id, servicio);
         if (updated == null) return NotFound();
         return Ok(updated);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> DeleteAsync(int id)
     {
-        var ok = _service.Delete(id);
+        var ok = await _service.DeleteAsync(id);
         if (!ok) return NotFound();
         return NoContent();
     }
