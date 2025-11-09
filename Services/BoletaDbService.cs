@@ -13,10 +13,25 @@ public class BoletaDbService
     public BoletaDbService(GobernanzaDbContext context) => _context = context;
 
     public IEnumerable<Boleta> GetAll() =>
-        _context.Boletas.Include(b=>b.Contribuyente).Include(b=>b.Servicio).AsNoTracking().ToList();
+        _context.Boletas
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Contribuyente)
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.Periodo)
+            .Include(b => b.Estado)
+            .AsNoTracking()
+            .ToList();
 
     public Boleta? GetById(int id) =>
-        _context.Boletas.Include(b=>b.Contribuyente).Include(b=>b.Servicio).FirstOrDefault(b=>b.Id==id);
+        _context.Boletas
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Contribuyente)
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.Periodo)
+            .Include(b => b.Estado)
+            .FirstOrDefault(b => b.Id == id);
 
     public Boleta Add(Boleta boleta)
     {
@@ -29,14 +44,15 @@ public class BoletaDbService
     {
         var existing = _context.Boletas.Find(id);
         if (existing == null) return null;
-        existing.ContribuyenteId = boleta.ContribuyenteId;
-        existing.ServicioId = boleta.ServicioId;
-        existing.Periodo = boleta.Periodo;
-        existing.FechaVencimiento = boleta.FechaVencimiento;
+
         existing.MontoTotal = boleta.MontoTotal;
-        existing.Estado = boleta.Estado;
-        existing.FechaPago = boleta.FechaPago;
         existing.CodigoPagoElectronico = boleta.CodigoPagoElectronico;
+        existing.FechaPago = boleta.FechaPago;
+
+        existing.ContribuyenteServicioId = boleta.ContribuyenteServicioId;
+        existing.PeriodoId = boleta.PeriodoId;
+        existing.EstadoId = boleta.EstadoId;
+
         _context.SaveChanges();
         return existing;
     }
@@ -51,43 +67,74 @@ public class BoletaDbService
     }
 
     public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId) =>
-        _context.Boletas.Include(b=>b.Servicio)
-            .Where(b=>b.ContribuyenteId==contribuyenteId)
-            .OrderByDescending(b=>b.Periodo).AsNoTracking().ToList();
+        _context.Boletas
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.Periodo)
+            .Where(b => b.ContribuyenteServicio.ContribuyenteId == contribuyenteId)
+            .OrderByDescending(b => b.Periodo.FechaVencimiento)
+            .AsNoTracking()
+            .ToList();
 
-    public IEnumerable<Boleta> GetByEstado(EstadoBoleta estado) =>
-        _context.Boletas.Include(b=>b.Contribuyente).Include(b=>b.Servicio)
-            .Where(b=>b.Estado==estado).OrderBy(b=>b.FechaVencimiento).AsNoTracking().ToList();
+    public IEnumerable<Boleta> GetByEstado(int estadoId) =>
+        _context.Boletas
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Contribuyente)
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.Periodo)
+            .Where(b => b.EstadoId == estadoId)
+            .OrderBy(b => b.Periodo.FechaVencimiento)
+            .AsNoTracking()
+            .ToList();
 
     public Boleta? GetByCodigoPago(string codigo) =>
-        _context.Boletas.Include(b=>b.Contribuyente).Include(b=>b.Servicio)
-            .FirstOrDefault(b=>b.CodigoPagoElectronico==codigo);
-
-    public Dictionary<(int ContribuyenteId,int ServicioId), DateTime> GetUltimasBoletasPorPar() =>
         _context.Boletas
-            .GroupBy(b=>new { b.ContribuyenteId, b.ServicioId })
-            .Select(g=>new {
-                g.Key.ContribuyenteId,
-                g.Key.ServicioId,
-                Ultimo = g.Max(b=>b.Periodo)
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Contribuyente)
+            .Include(b => b.ContribuyenteServicio)
+                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.Periodo)
+            .Include(b => b.Estado)
+            .FirstOrDefault(b => b.CodigoPagoElectronico == codigo);
+
+    // Devuelve la última fecha de periodo (Periodo.FechaVencimiento) por ContribuyenteServicioId
+    public Dictionary<int, DateTime> GetUltimasBoletasPorPar() =>
+        _context.Boletas
+            .Include(b => b.Periodo)
+            .GroupBy(b => b.ContribuyenteServicioId)
+            .Select(g => new {
+                ContribuyenteServicioId = g.Key,
+                Ultimo = g.Max(b => b.Periodo.FechaVencimiento)
             })
             .AsEnumerable()
-            .ToDictionary(x=> (x.ContribuyenteId,x.ServicioId), x=> x.Ultimo);
+            .ToDictionary(x => x.ContribuyenteServicioId, x => x.Ultimo);
 
-    public bool ExisteBoleta(int contribuyenteId,int servicioId,DateTime periodo) =>
-        _context.Boletas.Any(b=>b.ContribuyenteId==contribuyenteId && b.ServicioId==servicioId && b.Periodo==periodo);
+    // Comprueba existencia por ContribuyenteServicioId + PeriodoId
+    public bool ExisteBoleta(int contribuyenteServicioId, int periodoId) =>
+        _context.Boletas.Any(b => b.ContribuyenteServicioId == contribuyenteServicioId && b.PeriodoId == periodoId);
 
     public void AddRange(IEnumerable<Boleta> boletas)
     {
         _context.Boletas.AddRange(boletas);
     }
 
+    // Actualiza estados vencidos buscando los ids reales de los estados "Pendiente" y "Vencida"
     public int UpdateEstadosVencidos(DateTime hoy)
     {
+        var pendiente = _context.Estados.AsNoTracking().FirstOrDefault(e => e.Nombre == "Pendiente");
+        var vencida = _context.Estados.AsNoTracking().FirstOrDefault(e => e.Nombre == "Vencida");
+
+        if (pendiente == null || vencida == null)
+            throw new InvalidOperationException("Los estados 'Pendiente' y/o 'Vencida' no existen en la tabla Estados.");
+
         var vencidas = _context.Boletas
-            .Where(b=>b.Estado==EstadoBoleta.Pendiente && b.FechaVencimiento < hoy)
+            .Include(b => b.Periodo)
+            .Where(b => b.EstadoId == pendiente.Id && b.Periodo.FechaVencimiento < hoy)
             .ToList();
-        foreach (var b in vencidas) b.Estado = EstadoBoleta.Vencida;
+
+        foreach (var b in vencidas) b.EstadoId = vencida.Id;
+
         _context.SaveChanges();
         return vencidas.Count;
     }
