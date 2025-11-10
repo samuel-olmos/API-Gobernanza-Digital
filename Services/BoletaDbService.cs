@@ -12,30 +12,30 @@ public class BoletaDbService
     private readonly GobernanzaDbContext _context;
     public BoletaDbService(GobernanzaDbContext context) => _context = context;
 
-    public IEnumerable<Boleta> GetAll() =>
+    // Query completo con todas las navegaciones
+    private IQueryable<Boleta> QueryFull() =>
         _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
+            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Contribuyente)
+            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Servicio)
             .Include(b => b.Periodo)
-            .Include(b => b.Estado)
+            .Include(b => b.Estado);
+
+    // Obtener todas (con navegaciones)
+    public IEnumerable<Boleta> GetAll() =>
+        QueryFull()
             .AsNoTracking()
+            .OrderByDescending(b => b.FechaEmision)
             .ToList();
 
+    // Obtener por ID (con navegaciones)
     public Boleta? GetById(int id) =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Include(b => b.Estado)
+        QueryFull()
+            .AsNoTracking()
             .FirstOrDefault(b => b.Id == id);
 
+    // Crear boleta
     public Boleta Add(Boleta boleta)
     {
-        // Asegurar FechaEmision si viene default
         if (boleta.FechaEmision == default)
             boleta.FechaEmision = DateTime.UtcNow;
         _context.Boletas.Add(boleta);
@@ -43,132 +43,64 @@ public class BoletaDbService
         return boleta;
     }
 
-    public Boleta? Update(int id, Boleta boleta)
+    // Actualizar boleta
+    public Boleta? Update(int id, Boleta updated)
     {
         var existing = _context.Boletas.Find(id);
         if (existing == null) return null;
 
-        existing.MontoTotal = boleta.MontoTotal;
-        existing.CodigoPagoElectronico = boleta.CodigoPagoElectronico;
-        existing.FechaPago = boleta.FechaPago;
-        existing.FechaEmision = boleta.FechaEmision;
-        existing.FechaVencimiento = boleta.FechaVencimiento;
-        existing.ContribuyenteServicioId = boleta.ContribuyenteServicioId;
-        existing.PeriodoId = boleta.PeriodoId;
-        existing.EstadoId = boleta.EstadoId;
+        existing.ContribuyenteServicioId = updated.ContribuyenteServicioId;
+        existing.PeriodoId = updated.PeriodoId;
+        existing.EstadoId = updated.EstadoId;
+        existing.MontoTotal = updated.MontoTotal;
+        existing.FechaVencimiento = updated.FechaVencimiento;
 
         _context.SaveChanges();
         return existing;
     }
 
+    // Eliminar boleta
     public bool Delete(int id)
     {
-        var existing = _context.Boletas.Find(id);
-        if (existing == null) return false;
-        _context.Boletas.Remove(existing);
+        var entity = _context.Boletas.Find(id);
+        if (entity == null) return false;
+        _context.Boletas.Remove(entity);
         _context.SaveChanges();
         return true;
     }
 
+    // Filtros específicos
     public IEnumerable<Boleta> GetByContribuyente(int contribuyenteId) =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Where(b => b.ContribuyenteServicio.ContribuyenteId == contribuyenteId)
-            .OrderByDescending(b => b.FechaVencimiento) // CORREGIDO: ahora usa b.FechaVencimiento
+        QueryFull()
+            .Where(b => b.ContribuyenteServicio!.ContribuyenteId == contribuyenteId)
             .AsNoTracking()
+            .OrderByDescending(b => b.FechaVencimiento)
             .ToList();
 
     public IEnumerable<Boleta> GetByEstado(int estadoId) =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
+        QueryFull()
             .Where(b => b.EstadoId == estadoId)
-            .OrderBy(b => b.FechaVencimiento) // CORREGIDO: ahora usa b.FechaVencimiento
             .AsNoTracking()
-            .ToList();
-
-    public IEnumerable<Boleta> GetByPeriodo(int periodoId) =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Estado)
-            .Where(b => b.PeriodoId == periodoId)
             .OrderBy(b => b.FechaVencimiento)
-            .AsNoTracking()
             .ToList();
 
     public Boleta? GetByCodigoPago(string codigo) =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio)
-                .ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Include(b => b.Estado)
+        QueryFull()
+            .AsNoTracking()
             .FirstOrDefault(b => b.CodigoPagoElectronico == codigo);
 
-    // Devuelve la última fecha de vencimiento por ContribuyenteServicioId
-    public Dictionary<int, DateTime> GetUltimasBoletasPorSuscripcion() =>
-        _context.Boletas
-            .GroupBy(b => b.ContribuyenteServicioId)
-            .Select(g => new {
-                ContribuyenteServicioId = g.Key,
-                UltimaFecha = g.Max(b => b.FechaVencimiento) // CORREGIDO: ahora usa b.FechaVencimiento
-            })
-            .AsEnumerable()
-            .ToDictionary(x => x.ContribuyenteServicioId, x => x.UltimaFecha);
-
-    // Comprueba existencia por ContribuyenteServicioId + PeriodoId
-    public bool ExisteBoleta(int contribuyenteServicioId, int periodoId) =>
-        _context.Boletas.Any(b => b.ContribuyenteServicioId == contribuyenteServicioId && b.PeriodoId == periodoId);
-
+    // Métodos auxiliares
     public void AddRange(IEnumerable<Boleta> boletas)
     {
         foreach (var b in boletas)
-        {
-            if (b.FechaEmision == default)
-                b.FechaEmision = DateTime.UtcNow;
-        }
+            if (b.FechaEmision == default) b.FechaEmision = DateTime.UtcNow;
         _context.Boletas.AddRange(boletas);
     }
 
-    // Actualiza estados vencidos comparando FechaVencimiento de cada Boleta
-    public int UpdateEstadosVencidos(DateTime hoy)
-    {
-        var pendiente = _context.Estados.AsNoTracking().FirstOrDefault(e => e.Nombre == "Pendiente");
-        var vencida = _context.Estados.AsNoTracking().FirstOrDefault(e => e.Nombre == "Vencida");
-
-        if (pendiente == null || vencida == null)
-            throw new InvalidOperationException("Los estados 'Pendiente' y/o 'Vencida' no existen en la tabla Estados.");
-
-        var vencidas = _context.Boletas
-            .Where(b => b.EstadoId == pendiente.Id && b.FechaVencimiento.Date < hoy.Date) // CORREGIDO: ahora usa b.FechaVencimiento
-            .ToList();
-
-        foreach (var b in vencidas) b.EstadoId = vencida.Id;
-
-        _context.SaveChanges();
-        return vencidas.Count;
-    }
-
-    // Marca el periodo como generado
-    public void MarcarPeriodoGenerado(int periodoId)
-    {
-        var periodo = _context.Periodos.Find(periodoId);
-        if (periodo == null) throw new InvalidOperationException("Periodo no encontrado.");
-        if (!periodo.Generadas)
-        {
-            periodo.Generadas = true;
-            _context.SaveChanges();
-        }
-    }
+    public bool ExisteBoleta(int contribuyenteServicioId, int periodoId) =>
+        _context.Boletas.Any(b => 
+            b.ContribuyenteServicioId == contribuyenteServicioId && 
+            b.PeriodoId == periodoId);
 
     public void SaveChanges() => _context.SaveChanges();
 }

@@ -27,6 +27,7 @@ public class BoletaService : IBoletaService
     }
 
     // -------------------------------- Mapeo --------------------------------
+    // Aca se mapea de la entidad al DTO para que el servicio devuelva solo los datos necesarios
     private static BoletaDto Map(Boleta b) => new()
     {
         Id = b.Id,
@@ -46,23 +47,16 @@ public class BoletaService : IBoletaService
         FechaPago = b.FechaPago
     };
 
-    private IQueryable<Boleta> QueryFull() =>
-        _context.Boletas
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Contribuyente)
-            .Include(b => b.ContribuyenteServicio).ThenInclude(cs => cs.Servicio)
-            .Include(b => b.Periodo)
-            .Include(b => b.Estado)
-            .AsNoTracking();
-
     // -------------------------------- CRUD DTO --------------------------------
+    // Metodos Crud que llama el Controlador, usando el DbService interno y mapeando a DTO
     public IEnumerable<BoletaDto> GetAll() =>
-        QueryFull()
-            .OrderByDescending(b => b.FechaEmision)
-            .Select(b => Map(b))
-            .ToList();
+        _boletaDb.GetAll().Select(Map); // mapeo a DTO
 
-    public BoletaDto? GetById(int id) =>
-        QueryFull().Where(b => b.Id == id).Select(Map).FirstOrDefault();
+    public BoletaDto? GetById(int id)
+    {
+        var entity = _boletaDb.GetById(id);
+        return entity == null ? null : Map(entity); // mapeo a DTO
+    }
 
     public BoletaDto Create(BoletaCreateDto dto)
     {
@@ -80,51 +74,42 @@ public class BoletaService : IBoletaService
             FechaVencimiento = dto.FechaVencimiento ?? DateTime.UtcNow.Date.AddDays(10)
         };
 
-        _boletaDb.Add(entity);
-        return GetById(entity.Id)!;
+        var created = _boletaDb.Add(entity);
+        var result = _boletaDb.GetById(created.Id);
+        return Map(result!);
     }
 
     public BoletaDto? Update(int id, BoletaCreateDto dto)
     {
-        var entity = _context.Boletas.FirstOrDefault(b => b.Id == id);
-        if (entity == null) return null;
+        var existing = _context.Boletas.Find(id);
+        if (existing == null) return null;
 
-        entity.ContribuyenteServicioId = dto.ContribuyenteServicioId;
-        entity.PeriodoId = dto.PeriodoId;
-        if (dto.MontoTotal.HasValue) entity.MontoTotal = dto.MontoTotal.Value;
-        if (dto.EstadoId.HasValue) entity.EstadoId = dto.EstadoId.Value;
-        if (dto.FechaVencimiento.HasValue) entity.FechaVencimiento = dto.FechaVencimiento.Value;
+        existing.ContribuyenteServicioId = dto.ContribuyenteServicioId;
+        existing.PeriodoId = dto.PeriodoId;
+        if (dto.MontoTotal.HasValue) existing.MontoTotal = dto.MontoTotal.Value;
+        if (dto.EstadoId.HasValue) existing.EstadoId = dto.EstadoId.Value;
+        if (dto.FechaVencimiento.HasValue) existing.FechaVencimiento = dto.FechaVencimiento.Value;
 
-        _context.SaveChanges();
-        return GetById(id);
+        var updated = _boletaDb.Update(id, existing);
+        return updated == null ? null : Map(_boletaDb.GetById(id)!);
     }
 
-    public bool Delete(int id)
-    {
-        var e = _context.Boletas.Find(id);
-        if (e == null) return false;
-        _context.Boletas.Remove(e);
-        _context.SaveChanges();
-        return true;
-    }
+    public bool Delete(int id) => _boletaDb.Delete(id);
 
     // ---------------------------- Consultas filtradas ----------------------------
     public IEnumerable<BoletaDto> GetByContribuyente(int contribuyenteId) =>
-        QueryFull()
-            .Where(b => b.ContribuyenteServicio!.ContribuyenteId == contribuyenteId)
-            .OrderByDescending(b => b.FechaVencimiento)
-            .Select(Map)
-            .ToList();
+        _boletaDb.GetByContribuyente(contribuyenteId).Select(Map);
 
     public IEnumerable<BoletaDto> ListarBoletasPorContribuyenteFiltradas(int contribuyenteId, int? periodoId = null, int? estadoId = null)
     {
-        var q = QueryFull()
-            .Where(b => b.ContribuyenteServicio!.ContribuyenteId == contribuyenteId);
+        var boletas = _boletaDb.GetByContribuyente(contribuyenteId);
 
-        if (periodoId.HasValue) q = q.Where(b => b.PeriodoId == periodoId.Value);
-        if (estadoId.HasValue) q = q.Where(b => b.EstadoId == estadoId.Value);
+        if (periodoId.HasValue)
+            boletas = boletas.Where(b => b.PeriodoId == periodoId.Value);
+        if (estadoId.HasValue)
+            boletas = boletas.Where(b => b.EstadoId == estadoId.Value);
 
-        return q.OrderByDescending(b => b.FechaVencimiento).Select(Map).ToList();
+        return boletas.OrderByDescending(b => b.FechaVencimiento).Select(Map);
     }
 
     public IEnumerable<BoletaDto> GetByEstadoNombre(string nombreEstado)
@@ -132,19 +117,24 @@ public class BoletaService : IBoletaService
         if (string.IsNullOrWhiteSpace(nombreEstado)) return Enumerable.Empty<BoletaDto>();
         var estado = _context.Estados.AsNoTracking().FirstOrDefault(e => e.Nombre == nombreEstado);
         if (estado == null) return Enumerable.Empty<BoletaDto>();
-        return QueryFull().Where(b => b.EstadoId == estado.Id).Select(Map).ToList();
+        return _boletaDb.GetByEstado(estado.Id).Select(Map);
     }
 
-    public BoletaDto? GetByCodigoPago(string codigo) =>
-        QueryFull().Where(b => b.CodigoPagoElectronico == codigo).Select(Map).FirstOrDefault();
+    public BoletaDto? GetByCodigoPago(string codigo)
+    {
+        var entity = _boletaDb.GetByCodigoPago(codigo);
+        return entity == null ? null : Map(entity);
+    }
 
     // ---------------------------- Operaciones de estado ----------------------------
     public bool MarcarComoPagada(int id, DateTime? fechaPago = null)
     {
-        var entity = _context.Boletas.FirstOrDefault(b => b.Id == id);
+        var entity = _context.Boletas.Find(id);
         if (entity == null) return false;
+
         var estadoPagada = _context.Estados.FirstOrDefault(e => e.Nombre == "Pagada")
             ?? throw new InvalidOperationException("Estado 'Pagada' no encontrado.");
+
         entity.EstadoId = estadoPagada.Id;
         entity.FechaPago = fechaPago ?? DateTime.UtcNow;
         _context.SaveChanges();
@@ -236,6 +226,9 @@ public class BoletaService : IBoletaService
         return _montoService.CalcularMontoTotal(cs);
     }
 
-    private static string GenerarCodigoPago() =>
-        Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+    private static string GenerarCodigoPago()
+    {
+        var random = new Random();
+        return string.Join("", Enumerable.Range(0, 12).Select(_ => random.Next(0, 10)));
+    }
 }
