@@ -32,13 +32,8 @@ public class ServicioController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ServicioDto>> CreateAsync(ServicioCreateDto dto)
     {
-        var created = await _service.CreateAsync(dto);
-        
-        // Opción 1: Usar el nombre de ruta explícito
-        return CreatedAtRoute("GetServicioById", new { id = created.Id }, created);
-        
-        // Opción 2: Si sigue fallando, usar esta alternativa simple
-        // return Created($"/api/servicio/{created.Id}", created);
+        var created = await _service.CreateAsync(dto);     
+        return Created($"/api/servicio/{created.Id}", created);
     }
 
     [HttpPut("{id}")]
