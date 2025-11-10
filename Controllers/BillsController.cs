@@ -23,15 +23,15 @@ namespace API_Gobernanza_Digital.Controllers
         /// Endpoint para que PayLink consulte una factura (boleta)
         /// antes de procesar un pago.
         /// </summary>
-        [HttpGet("/api/bills/{billId}")] // <-- Ruta absoluta (como pide PayLink)
+        [HttpGet("/api/bills/{id}")] // <-- Ruta absoluta (como pide PayLink)
         [ProducesResponseType(typeof(PayLinkBillResponseDto), 200)]
         [ProducesResponseType(404)]
-        public IActionResult GetBillForGateway(string billId, [FromQuery] int businessId)
+        public IActionResult GetBillForGateway(int id, [FromQuery] int businessId)
         {
             // (Ignoramos businessId por ahora, pero podríamos usarlo para validar)
 
             // 1. Usamos el método existente de IBoletaService
-            var boleta = _boletaService.GetByCodigoPago(billId);
+            var boleta = _boletaService.GetById(id);
 
             if (boleta == null)
             {
@@ -45,7 +45,7 @@ namespace API_Gobernanza_Digital.Controllers
             var respuesta = new PayLinkBillResponseDto
             {
                 TransactionId = randomTransactionId,
-                FacturaId = boleta.CodigoPagoElectronico, // Nuestro código es su FacturaId
+                FacturaId = boleta.Id, // Nuestro código es su FacturaId
                 Monto = boleta.MontoTotal
             };
 

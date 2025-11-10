@@ -10,7 +10,7 @@ namespace API_Gobernanza_Digital.Models.Dtos
         public string TransactionId { get; set; } = null!;
 
         // Nuestro CodigoPagoElectronico
-        public string FacturaId { get; set; } = null!;
+        public int FacturaId { get; set; }
 
         // El monto de la boleta
         public decimal Monto { get; set; }

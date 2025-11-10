@@ -157,6 +157,25 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Pagos",
+      "description": "Endpoints de procesamiento de pagos con pasarela PayLink",
+      "item": [
+        {
+          "name": "Pagar Boleta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/pagar/{{boletaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","pagos","pagar","{{boletaId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": []

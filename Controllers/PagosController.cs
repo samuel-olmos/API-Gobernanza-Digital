@@ -20,15 +20,15 @@ namespace API_Gobernanza_Digital.Controllers
         /// Endpoint para simular el pago de una boleta.
         /// Llama al POST /api/payments de PayLink.
         /// </summary>
-        /// <param name="codigoPago">El CodigoPagoElectronico de la boleta.</param>
-        [HttpPost("pagar/{codigoPago}")]
+        /// <param name="id">ID de la boleta a pagar.</param>
+        [HttpPost("pagar/{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<IActionResult> PagarBoleta(string codigoPago)
+        public async Task<IActionResult> PagarBoleta(int id)
         {
             try
             {
-                var exito = await _pagoService.PagarBoletaAsync(codigoPago);
+                var exito = await _pagoService.PagarBoletaAsync(id);
                 if (exito)
                 {
                     return Ok(new { message = "Pago confirmado y registrado." });

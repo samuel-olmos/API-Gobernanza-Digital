@@ -55,15 +55,15 @@ namespace API_Gobernanza_Digital.Services
         /// <summary>
         /// Implementación del Flujo 2: Pagar una Boleta.
         /// </summary>
-        public async Task<bool> PagarBoletaAsync(string codigoPagoElectronico)
+        public async Task<bool> PagarBoletaAsync(int boletaId)
         {
-            // 1. Buscar la boleta en NUESTRA BD
-            var boleta = _boletaService.GetByCodigoPago(codigoPagoElectronico);
+            // 1. Buscar la boleta en NUESTRA BD por ID
+            var boleta = _boletaService.GetById(boletaId);
             if (boleta == null)
             {
-                throw new InvalidOperationException("La boleta con ese código de pago no existe.");
+                throw new InvalidOperationException("La boleta con ese ID no existe.");
             }
-            if (boleta.Estado.Nombre == "Pagada") // Asumiendo que el Estado está cargado
+            if (boleta.EstadoNombre == "Pagada")
             {
                 throw new InvalidOperationException("La boleta ya fue pagada.");
             }

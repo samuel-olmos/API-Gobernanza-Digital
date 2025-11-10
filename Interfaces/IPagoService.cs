@@ -11,8 +11,8 @@ namespace API_Gobernanza_Digital.Interfaces
         /// <summary>
         /// Inicia un pago en la pasarela externa (POST /api/payments).
         /// </summary>
-        /// <param name="codigoPagoElectronico">Nuestro CodigoPagoElectronico (su facturaId)</param>
+        /// <param name="boletaId">ID de la boleta a pagar</param>
         /// <returns>True si el pago fue "Confirmado", False si fue rechazado.</returns>
-        Task<bool> PagarBoletaAsync(string codigoPagoElectronico);
+        Task<bool> PagarBoletaAsync(int boletaId);
     }
 }
