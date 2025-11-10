@@ -183,6 +183,7 @@ public class BoletaService : IBoletaService
 
         var suscripciones = await _context.ContribuyenteServicios
             .Include(cs => cs.Servicio).ThenInclude(s => s.Frecuencia)
+            .Include(cs => cs.Contribuyente).ThenInclude(c => c.Tipo)
             .Where(cs => cs.FechaInicio <= periodoFecha &&
                         (cs.FechaFin == null || cs.FechaFin >= periodoFecha))
             .AsNoTracking()
