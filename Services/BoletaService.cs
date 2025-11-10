@@ -74,6 +74,8 @@ public class BoletaService : IBoletaService
         return _boletaDb.UpdateEstadosVencidos(hoy);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    
     public async Task<int> GenerarBoletasPeriodo(int idPeriodo)
     {
         var InstanciaPeriodoACobrar = await _periodoDb.GetByIdAsync(idPeriodo);
@@ -135,7 +137,7 @@ public class BoletaService : IBoletaService
         // Marca el período como "Generadas = true" para saber que ya se generaron boletas de ese periodo y no volver a elegirlo
         InstanciaPeriodoACobrar.Generadas = true;
         _context.Periodos.Update(InstanciaPeriodoACobrar);
-        
+
         // Guarda todas las nuevas boletas en la base de datos
         _boletaDb.AddRange(nuevas);
         _boletaDb.SaveChanges();
@@ -148,7 +150,35 @@ public class BoletaService : IBoletaService
         if (frecuencia.MesesIntervalo % fechaPeriodo.Month != 0) return false;
         return true;
     }
-    
+
     private static string GenerarCodigoPago() =>
         Guid.NewGuid().ToString("N")[..12].ToUpperInvariant();
+        
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    private IEnumerable<Boleta> ListarBoletasPorContribuyente(int contribuyenteId, int? periodoId = null, int? estadoId = null)
+    {
+        var boletas = _boletaDb.GetByContribuyente(contribuyenteId);
+
+        // Filtrar por período si se proporciona
+        if (periodoId.HasValue)
+        {
+            boletas = boletas.Where(b => b.PeriodoId == periodoId.Value);
+        }
+
+        // Filtrar por estado si se proporciona
+        if (estadoId.HasValue)
+        {
+            boletas = boletas.Where(b => b.EstadoId == estadoId.Value);
+        }
+
+        return boletas;
+    }
+
+    // Versión pública para exponer en la interfaz
+    public IEnumerable<Boleta> ListarBoletasPorContribuyenteFiltradas(int contribuyenteId, int? periodoId = null, int? estadoId = null)
+    {
+        return ListarBoletasPorContribuyente(contribuyenteId, periodoId, estadoId);
+    }
 }
