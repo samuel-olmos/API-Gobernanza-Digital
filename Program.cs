@@ -2,6 +2,8 @@ using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Context;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.OpenApi.Models;
+using API_Gobernanza_Digital.Services;
+using API_Gobernanza_Digital.Services.DbServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
@@ -18,6 +20,16 @@ builder.Services.AddDbContext<GobernanzaDbContext>(options =>
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IServicioService, ServicioDbService>();
+builder.Services.AddScoped<IContribuyenteService, ContribuyenteDbService>();
+builder.Services.AddScoped<ContribuyenteServicioDbService>();
+builder.Services.AddScoped<IContribuyenteServicioService, ContribuyenteServicioService>();
+builder.Services.AddScoped<PeriodoDbService>();
+builder.Services.AddScoped<BoletaDbService>();
+builder.Services.AddScoped<MontoService>();
+builder.Services.AddScoped<IBoletaService, BoletaService>();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
