@@ -163,6 +163,22 @@
       "description": "Endpoints de procesamiento de pagos con pasarela PayLink",
       "item": [
         {
+          "name": "Consultar Factura (PayLink)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bills/{{boletaId}}?businessId={{businessId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","bills","{{boletaId}}"],
+              "query": [
+                { "key": "businessId", "value": "{{businessId}}" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Pagar Boleta",
           "request": {
             "method": "POST",
