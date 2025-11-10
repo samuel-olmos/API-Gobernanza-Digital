@@ -22,7 +22,7 @@ public class ServicioController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ServicioDto>> GetByIdAsync(int id)
+    public async Task<ActionResult<ServicioDto>> GetByIdAsync(int id)  // ✅ NOMBRE IMPORTANTE
     {
         var s = await _service.GetByIdAsync(id);
         if (s == null) return NotFound();
@@ -33,7 +33,11 @@ public class ServicioController : ControllerBase
     public async Task<ActionResult<ServicioDto>> CreateAsync(ServicioCreateDto dto)
     {
         var created = await _service.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = created.Id }, created);
+        return CreatedAtAction(
+            nameof(GetByIdAsync),           // ✅ Debe coincidir exactamente
+            new { id = created.Id },        // ✅ Parámetro de ruta
+            created                          // ✅ Body de respuesta
+        );
     }
 
     [HttpPut("{id}")]
