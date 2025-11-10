@@ -24,5 +24,9 @@ namespace API_Gobernanza_Digital.Interfaces
         IEnumerable<Boleta> GetByEstadoNombre(string nombreEstado);
 
         Boleta? GetByCodigoPago(string codigo);
+
+        IEnumerable<Boleta> ListarBoletasPorContribuyenteFiltradas(int contribuyenteId, int? periodoId = null, int? estadoId = null);
+
+        
     }
 }
