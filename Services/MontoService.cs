@@ -10,6 +10,9 @@ public class MontoService
 {
     private readonly Random _random = new Random();
 
+    public MontoService()
+    {
+    }
 
     public decimal CalcularMontoTotal(ContribuyenteServicio cs)
     {
