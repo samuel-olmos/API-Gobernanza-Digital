@@ -1,5 +1,5 @@
 using API_Gobernanza_Digital.Models;
-using API_Gobernanza_Digital.Models.Dtos; // <-- Importar el DTO
+using API_Gobernanza_Digital.Models.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -7,13 +7,11 @@ namespace API_Gobernanza_Digital.Interfaces
 {
     public interface IContribuyenteServicioService
     {
-        // Métodos de Escritura
-        Task<ContribuyenteServicio> CrearContribuyenteServicioAsync(ContribuyenteServicioCreateDto dto);
+        // Métodos que devuelven DTOs
+        Task<ContribuyenteServicioDto> CrearContribuyenteServicioAsync(ContribuyenteServicioCreateDto dto);
         Task<bool> CancelarContribuyenteServicioAsync(int contribuyenteServicioId);
-
-        // Métodos de Lectura
-        Task<ContribuyenteServicio?> GetContribuyenteServicioByIdAsync(int id);
-        Task<IEnumerable<ContribuyenteServicio>> GetAllContribuyenteServiciosAsync();
-        Task<IEnumerable<ContribuyenteServicio>> GetContribuyenteServiciosPorContribuyenteAsync(int contribuyenteId);
+        Task<ContribuyenteServicioDto?> GetContribuyenteServicioByIdAsync(int id);
+        Task<IEnumerable<ContribuyenteServicioDto>> GetAllContribuyenteServiciosAsync();
+        Task<IEnumerable<ContribuyenteServicioDto>> GetContribuyenteServiciosPorContribuyenteAsync(int contribuyenteId);
     }
 }

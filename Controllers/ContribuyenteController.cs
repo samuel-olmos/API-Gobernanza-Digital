@@ -19,14 +19,14 @@ public class ContribuyenteController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Contribuyente>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ContribuyenteDto>>> GetAll()
     {
         var all = await _service.GetAllAsync();
         return Ok(all);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Contribuyente>> GetById(int id)
+    public async Task<ActionResult<ContribuyenteDto>> GetById(int id)
     {
         var c = await _service.GetByIdAsync(id);
         if (c == null) return NotFound();

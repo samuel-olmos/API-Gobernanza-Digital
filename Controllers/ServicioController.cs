@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using API_Gobernanza_Digital.Interfaces;
-using API_Gobernanza_Digital.Models;
+using API_Gobernanza_Digital.Models.Dtos;
 
 namespace API_Gobernanza_Digital.Controllers;
 
@@ -16,13 +16,13 @@ public class ServicioController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Servicio>>> GetAllAsync()
+    public async Task<ActionResult<IEnumerable<ServicioDto>>> GetAllAsync()
     {
         return Ok(await _service.GetAllAsync());
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Servicio>> GetByIdAsync(int id)
+    public async Task<ActionResult<ServicioDto>> GetByIdAsync(int id)
     {
         var s = await _service.GetByIdAsync(id);
         if (s == null) return NotFound();
@@ -30,16 +30,16 @@ public class ServicioController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Servicio>> CreateAsync(Servicio servicio)
+    public async Task<ActionResult<ServicioDto>> CreateAsync(ServicioCreateDto dto)
     {
-        var created = await _service.CreateAsync(servicio);
+        var created = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(GetByIdAsync), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Servicio>> UpdateAsync(int id, Servicio servicio)
+    public async Task<ActionResult<ServicioDto>> UpdateAsync(int id, ServicioCreateDto dto)
     {
-        var updated = await _service.UpdateAsync(id, servicio);
+        var updated = await _service.UpdateAsync(id, dto);
         if (updated == null) return NotFound();
         return Ok(updated);
     }

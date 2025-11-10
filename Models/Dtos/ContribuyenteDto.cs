@@ -8,10 +8,11 @@ namespace API_Gobernanza_Digital.Models.Dtos
         public string Nombre { get; set; } = string.Empty;
         public string? Apellido { get; set; }
         public string? RazonSocial { get; set; }
-        public string Identificacion { get; set; } = string.Empty; // e.g. RUT/CUIT    
-        public string Domicilio { get; set; } = string.Empty;                      
+        public string Identificacion { get; set; } = string.Empty;
+        public string Domicilio { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public int TipoId { get; set; }
+        public string? TipoNombre { get; set; }              // agregado
     }
 
     public class ContribuyenteCreateDto

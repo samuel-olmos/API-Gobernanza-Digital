@@ -2,6 +2,7 @@ using System;
 using Microsoft.AspNetCore.Mvc;
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Models;
+using API_Gobernanza_Digital.Models.Dtos;
 
 namespace API_Gobernanza_Digital.Controllers;
 
@@ -18,14 +19,14 @@ public class BoletaController : ControllerBase
 
     // GET: api/boleta
     [HttpGet]
-    public ActionResult<IEnumerable<Boleta>> GetAll()
+    public ActionResult<IEnumerable<BoletaDto>> GetAll()
     {
         return Ok(_service.GetAll());
     }
 
     // GET: api/boleta/{id}
     [HttpGet("{id}")]
-    public ActionResult<Boleta> GetById(int id)
+    public ActionResult<BoletaDto> GetById(int id)
     {
         var b = _service.GetById(id);
         if (b == null) return NotFound();
@@ -34,7 +35,7 @@ public class BoletaController : ControllerBase
 
     // GET: api/boleta/contribuyente/{contribuyenteId}?periodoId=1&estadoId=2
     [HttpGet("contribuyente/{contribuyenteId}")]
-    public ActionResult<IEnumerable<Boleta>> GetByContribuyente(
+    public ActionResult<IEnumerable<BoletaDto>> GetByContribuyente(
         int contribuyenteId, 
         [FromQuery] int? periodoId = null, 
         [FromQuery] int? estadoId = null)
@@ -45,7 +46,7 @@ public class BoletaController : ControllerBase
 
     // GET: api/boleta/estado/{nombreEstado}
     [HttpGet("estado/{nombreEstado}")]
-    public ActionResult<IEnumerable<Boleta>> GetByEstado(string nombreEstado)
+    public ActionResult<IEnumerable<BoletaDto>> GetByEstado(string nombreEstado)
     {
         var boletas = _service.GetByEstadoNombre(nombreEstado);
         return Ok(boletas);
@@ -53,7 +54,7 @@ public class BoletaController : ControllerBase
 
     // GET: api/boleta/codigo/{codigo}
     [HttpGet("codigo/{codigo}")]
-    public ActionResult<Boleta> GetByCodigoPago(string codigo)
+    public ActionResult<BoletaDto> GetByCodigoPago(string codigo)
     {
         var boleta = _service.GetByCodigoPago(codigo);
         if (boleta == null) return NotFound();
@@ -61,14 +62,14 @@ public class BoletaController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<Boleta> Create(Boleta boleta)
+    public ActionResult<BoletaDto> Create(BoletaCreateDto boleta)
     {
         var created = _service.Create(boleta);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public ActionResult<Boleta> Update(int id, Boleta boleta)
+    public ActionResult<BoletaDto> Update(int id, BoletaCreateDto boleta)
     {
         var updated = _service.Update(id, boleta);
         if (updated == null) return NotFound();

@@ -11,12 +11,12 @@ namespace API_Gobernanza_Digital.Models.Dtos
         public string? ServicioNombre { get; set; }
         public DateTime FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
-        public decimal? MontoTotal { get; set; }
     }
-}
-public class ContribuyenteServicioCreateDto
-{
-    public int ContribuyenteId { get; set; }
-    public int ServicioId { get; set; }
-    public DateTime FechaInicio { get; set; }
+
+    public class ContribuyenteServicioCreateDto
+    {
+        public int ContribuyenteId { get; set; }
+        public int ServicioId { get; set; }
+        public DateTime FechaInicio { get; set; }
+    }
 }

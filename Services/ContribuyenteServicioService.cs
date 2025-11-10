@@ -1,9 +1,10 @@
 using API_Gobernanza_Digital.Interfaces;
 using API_Gobernanza_Digital.Services.DbServices; 
 using API_Gobernanza_Digital.Models;
-using API_Gobernanza_Digital.Models.Dtos; // <-- Importar el DTO
+using API_Gobernanza_Digital.Models.Dtos;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace API_Gobernanza_Digital.Services
@@ -17,20 +18,34 @@ namespace API_Gobernanza_Digital.Services
             _dbService = dbService;
         }
 
-        // --- MÉTODOS DE ESCRITURA (CON LÓGICA) ---
+        // Mapper centralizado
+        private static ContribuyenteServicioDto Map(ContribuyenteServicio cs) => new()
+        {
+            Id = cs.Id,
+            ContribuyenteId = cs.ContribuyenteId,
+            ContribuyenteNombre = cs.Contribuyente?.Nombre,
+            ServicioId = cs.ServicioId,
+            ServicioNombre = cs.Servicio?.Nombre,
+            FechaInicio = cs.FechaInicio,
+            FechaFin = cs.FechaFin
+        };
 
-        public async Task<ContribuyenteServicio> CrearContribuyenteServicioAsync(ContribuyenteServicioCreateDto dto)
+        // --- MÉTODOS DE ESCRITURA (CON LÓGICA) ---
+        public async Task<ContribuyenteServicioDto> CrearContribuyenteServicioAsync(ContribuyenteServicioCreateDto dto)
         {
             var nuevoContribuyenteServicio = new ContribuyenteServicio
             {
                 ContribuyenteId = dto.ContribuyenteId,
                 ServicioId = dto.ServicioId,
-                FechaInicio = DateTime.Now,
+                FechaInicio = dto.FechaInicio,
                 FechaFin = null
             };
             
             await _dbService.AddAsync(nuevoContribuyenteServicio);
-            return nuevoContribuyenteServicio;
+            
+            // Recargar con navegaciones para el DTO
+            var created = await _dbService.GetByIdAsync(nuevoContribuyenteServicio.Id);
+            return Map(created!);
         }
 
         public async Task<bool> CancelarContribuyenteServicioAsync(int contribuyenteServicioId)
@@ -39,30 +54,31 @@ namespace API_Gobernanza_Digital.Services
             
             if (contribuyenteServicio == null || contribuyenteServicio.FechaFin != null)
             {
-                return false; // No existe o ya estaba cancelado
+                return false;
             }
 
-            contribuyenteServicio.FechaFin = DateTime.Now;
-            
+            contribuyenteServicio.FechaFin = DateTime.UtcNow;
             await _dbService.UpdateAsync(contribuyenteServicio);
             return true;
         }
 
-        // --- MÉTODOS DE LECTURA (PASAMANOS) ---
-
-        public async Task<ContribuyenteServicio?> GetContribuyenteServicioByIdAsync(int id)
+        // --- MÉTODOS DE LECTURA (DEVUELVEN DTOs) ---
+        public async Task<ContribuyenteServicioDto?> GetContribuyenteServicioByIdAsync(int id)
         {
-            return await _dbService.GetByIdAsync(id);
+            var entity = await _dbService.GetByIdAsync(id);
+            return entity == null ? null : Map(entity);
         }
 
-        public async Task<IEnumerable<ContribuyenteServicio>> GetAllContribuyenteServiciosAsync()
+        public async Task<IEnumerable<ContribuyenteServicioDto>> GetAllContribuyenteServiciosAsync()
         {
-            return await _dbService.GetAllAsync();
+            var entities = await _dbService.GetAllAsync();
+            return entities.Select(Map);
         }
 
-        public async Task<IEnumerable<ContribuyenteServicio>> GetContribuyenteServiciosPorContribuyenteAsync(int contribuyenteId)
+        public async Task<IEnumerable<ContribuyenteServicioDto>> GetContribuyenteServiciosPorContribuyenteAsync(int contribuyenteId)
         {
-            return await _dbService.GetByContribuyenteIdAsync(contribuyenteId);
+            var entities = await _dbService.GetByContribuyenteIdAsync(contribuyenteId);
+            return entities.Select(Map);
         }
     }
 }

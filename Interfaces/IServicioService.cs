@@ -1,12 +1,15 @@
-using API_Gobernanza_Digital.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using API_Gobernanza_Digital.Models.Dtos;
 
 namespace API_Gobernanza_Digital.Interfaces;
 
 public interface IServicioService
 {
-    Task<IEnumerable<Servicio>> GetAllAsync();
-    Task<Servicio?> GetByIdAsync(int id);
-    Task<Servicio> CreateAsync(Servicio servicio);
-    Task<Servicio?> UpdateAsync(int id, Servicio servicio);
+    Task<IEnumerable<ServicioDto>> GetAllAsync();
+    Task<ServicioDto?> GetByIdAsync(int id);
+    Task<ServicioDto> CreateAsync(ServicioCreateDto dto);
+    Task<ServicioDto?> UpdateAsync(int id, ServicioCreateDto dto);
     Task<bool> DeleteAsync(int id);
+
 }

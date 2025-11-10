@@ -1,14 +1,13 @@
 using API_Gobernanza_Digital.Interfaces;
-using API_Gobernanza_Digital.Models.Dtos; // <-- Importar el DTO
+using API_Gobernanza_Digital.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using API_Gobernanza_Digital.Models; 
 
 namespace API_Gobernanza_Digital.Controllers
 {
     [ApiController]
-    [Route("api/contribuyente-servicio")] // Ruta más limpia
+    [Route("api/contribuyente-servicio")]
     public class ContribuyenteServicioController : ControllerBase
     {
         private readonly IContribuyenteServicioService _servicioService;
@@ -19,9 +18,8 @@ namespace API_Gobernanza_Digital.Controllers
         }
 
         // --- ENDPOINTS DE ESCRITURA ---
-
         [HttpPost]
-        [ProducesResponseType(typeof(ContribuyenteServicio), 201)]
+        [ProducesResponseType(typeof(ContribuyenteServicioDto), 201)]
         [ProducesResponseType(400)]
         public async Task<IActionResult> CrearContribuyenteServicio([FromBody] ContribuyenteServicioCreateDto dto)
         {
@@ -50,19 +48,18 @@ namespace API_Gobernanza_Digital.Controllers
         }
         
         // --- ENDPOINTS DE LECTURA ---
-
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicio>), 200)]
-        public async Task<ActionResult<IEnumerable<ContribuyenteServicio>>> GetAllContribuyenteServicios()
+        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicioDto>), 200)]
+        public async Task<ActionResult<IEnumerable<ContribuyenteServicioDto>>> GetAllContribuyenteServicios()
         {
             var lista = await _servicioService.GetAllContribuyenteServiciosAsync();
             return Ok(lista);
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ContribuyenteServicio), 200)]
+        [ProducesResponseType(typeof(ContribuyenteServicioDto), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<ContribuyenteServicio>> GetContribuyenteServicioById(int id)
+        public async Task<ActionResult<ContribuyenteServicioDto>> GetContribuyenteServicioById(int id)
         {
             var item = await _servicioService.GetContribuyenteServicioByIdAsync(id);
             if (item == null)
@@ -73,8 +70,8 @@ namespace API_Gobernanza_Digital.Controllers
         }
 
         [HttpGet("contribuyente/{contribuyenteId}")]
-        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicio>), 200)]
-        public async Task<ActionResult<IEnumerable<ContribuyenteServicio>>> GetContribuyenteServiciosPorContribuyente(int contribuyenteId)
+        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicioDto>), 200)]
+        public async Task<ActionResult<IEnumerable<ContribuyenteServicioDto>>> GetContribuyenteServiciosPorContribuyente(int contribuyenteId)
         {
             var lista = await _servicioService.GetContribuyenteServiciosPorContribuyenteAsync(contribuyenteId);
             return Ok(lista);

@@ -1,32 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using API_Gobernanza_Digital.Models;
+using API_Gobernanza_Digital.Models.Dtos;
 
-namespace API_Gobernanza_Digital.Interfaces
+namespace API_Gobernanza_Digital.Interfaces;
+
+public interface IBoletaService
 {
-    public interface IBoletaService
-    {
-        // CRUD
-        IEnumerable<Boleta> GetAll();
-        Boleta? GetById(int id);
-        Boleta Create(Boleta boleta);
-        Boleta? Update(int id, Boleta boleta);
-        bool Delete(int id);
+    // Exposición (DTOs)
+    IEnumerable<BoletaDto> GetAll();
+    BoletaDto? GetById(int id);
+    BoletaDto Create(BoletaCreateDto dto);
+    BoletaDto? Update(int id, BoletaCreateDto dto);
+    bool Delete(int id);
 
-        // Métodos específicos
-        Task<int> GenerarBoletasPeriodo(int idPeriodo);
-        bool MarcarComoPagada(int id, DateTime? fechaPago = null);
-        int ActualizarBoletasVencidas();
-        IEnumerable<Boleta> GetByContribuyente(int contribuyenteId);
+    IEnumerable<BoletaDto> GetByContribuyente(int contribuyenteId);
+    IEnumerable<BoletaDto> ListarBoletasPorContribuyenteFiltradas(int contribuyenteId, int? periodoId = null, int? estadoId = null);
+    IEnumerable<BoletaDto> GetByEstadoNombre(string nombreEstado);
+    BoletaDto? GetByCodigoPago(string codigo);
 
-        // Reemplaza el método con enum por nombre del estado (entidad Estado)
-        IEnumerable<Boleta> GetByEstadoNombre(string nombreEstado);
-
-        Boleta? GetByCodigoPago(string codigo);
-
-        IEnumerable<Boleta> ListarBoletasPorContribuyenteFiltradas(int contribuyenteId, int? periodoId = null, int? estadoId = null);
-
-        
-    }
+    bool MarcarComoPagada(int id, DateTime? fechaPago = null);
+    int ActualizarBoletasVencidas();
+    Task<int> GenerarBoletasPeriodo(int idPeriodo);
 }
