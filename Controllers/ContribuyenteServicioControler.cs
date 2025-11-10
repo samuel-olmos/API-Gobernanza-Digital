@@ -1,51 +1,83 @@
 using API_Gobernanza_Digital.Interfaces;
+using API_Gobernanza_Digital.Models.Dtos; // <-- Importar el DTO
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using API_Gobernanza_Digital.Models; 
 
 namespace API_Gobernanza_Digital.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class SuscripcionesController : ControllerBase
+    [Route("api/contribuyente-servicio")] // Ruta más limpia
+    public class ContribuyenteServicioController : ControllerBase
     {
-        // Depende solo de la interfaz de LÓGICA (esto está perfecto)
         private readonly IContribuyenteServicioService _servicioService;
 
-        public SuscripcionesController(IContribuyenteServicioService servicioService)
+        public ContribuyenteServicioController(IContribuyenteServicioService servicioService)
         {
             _servicioService = servicioService;
         }
 
+        // --- ENDPOINTS DE ESCRITURA ---
+
         [HttpPost]
-        public async Task<IActionResult> CrearSuscripcion([FromBody] SuscripcionCreateDto dto)
+        [ProducesResponseType(typeof(ContribuyenteServicio), 201)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> CrearContribuyenteServicio([FromBody] ContribuyenteServicioCreateDto dto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
             
-            var nuevaSuscripcion = await _servicioService.CrearSuscripcionAsync(dto);
+            var nuevoServicio = await _servicioService.CrearContribuyenteServicioAsync(dto);
             
-            // (Sería mejor devolver un DTO, pero funciona)
-            return CreatedAtAction(nameof(GetSuscripcion), new { id = nuevaSuscripcion.Id }, nuevaSuscripcion);
+            return CreatedAtAction(nameof(GetContribuyenteServicioById), new { id = nuevoServicio.Id }, nuevoServicio);
         }
 
         [HttpPut("{id}/cancelar")]
-        public async Task<IActionResult> CancelarSuscripcion(int id)
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> CancelarContribuyenteServicio(int id)
         {
-            var resultado = await _servicioService.CancelarSuscripcionAsync(id);
+            var resultado = await _servicioService.CancelarContribuyenteServicioAsync(id);
             if (!resultado)
             {
-                return NotFound("No se encontró la suscripción o ya estaba cancelada.");
+                return NotFound("No se encontró el ContribuyenteServicio o ya estaba cancelado.");
             }
             
-            return NoContent(); // Éxito
+            return NoContent();
         }
         
-        [HttpGet("{id}")]
-        public IActionResult GetSuscripcion(int id)
+        // --- ENDPOINTS DE LECTURA ---
+
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicio>), 200)]
+        public async Task<ActionResult<IEnumerable<ContribuyenteServicio>>> GetAllContribuyenteServicios()
         {
-            return Ok("Endpoint GetSuscripcion pendiente de implementación");
+            var lista = await _servicioService.GetAllContribuyenteServiciosAsync();
+            return Ok(lista);
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ContribuyenteServicio), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<ContribuyenteServicio>> GetContribuyenteServicioById(int id)
+        {
+            var item = await _servicioService.GetContribuyenteServicioByIdAsync(id);
+            if (item == null)
+            {
+                return NotFound();
+            }
+            return Ok(item);
+        }
+
+        [HttpGet("contribuyente/{contribuyenteId}")]
+        [ProducesResponseType(typeof(IEnumerable<ContribuyenteServicio>), 200)]
+        public async Task<ActionResult<IEnumerable<ContribuyenteServicio>>> GetContribuyenteServiciosPorContribuyente(int contribuyenteId)
+        {
+            var lista = await _servicioService.GetContribuyenteServiciosPorContribuyenteAsync(contribuyenteId);
+            return Ok(lista);
         }
     }
 }

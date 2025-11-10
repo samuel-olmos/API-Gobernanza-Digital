@@ -54,9 +54,9 @@ public class BoletaController : ControllerBase
 	}
 
 	[HttpPost("generar")]
-	public async Task<IActionResult> Generar([FromQuery] DateTime? fechaReferencia = null)
+	public async Task<IActionResult> Generar([FromQuery] int idPeriodo)
 	{
-		var generadas = await _service.GenerarBoletasPeriodo(fechaReferencia);
+		var generadas = await _service.GenerarBoletasPeriodo(idPeriodo);
 		if (generadas == 0)
 		{
 			return Ok(new { message = "No se generaron boletas nuevas." });

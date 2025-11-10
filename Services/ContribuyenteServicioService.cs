@@ -1,6 +1,7 @@
 using API_Gobernanza_Digital.Interfaces;
-using API_Gobernanza_Digital.Services.DbServices; // El DbService CONCRETO
+using API_Gobernanza_Digital.Services.DbServices; 
 using API_Gobernanza_Digital.Models;
+using API_Gobernanza_Digital.Models.Dtos; // <-- Importar el DTO
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,9 +19,9 @@ namespace API_Gobernanza_Digital.Services
 
         // --- MÉTODOS DE ESCRITURA (CON LÓGICA) ---
 
-        public async Task<ContribuyenteServicio> CrearSuscripcionAsync(SuscripcionCreateDto dto)
+        public async Task<ContribuyenteServicio> CrearContribuyenteServicioAsync(ContribuyenteServicioCreateDto dto)
         {
-            var nuevaSuscripcion = new ContribuyenteServicio
+            var nuevoContribuyenteServicio = new ContribuyenteServicio
             {
                 ContribuyenteId = dto.ContribuyenteId,
                 ServicioId = dto.ServicioId,
@@ -28,38 +29,38 @@ namespace API_Gobernanza_Digital.Services
                 FechaFin = null
             };
             
-            await _dbService.AddAsync(nuevaSuscripcion);
-            return nuevaSuscripcion;
+            await _dbService.AddAsync(nuevoContribuyenteServicio);
+            return nuevoContribuyenteServicio;
         }
 
-        public async Task<bool> CancelarSuscripcionAsync(int suscripcionId)
+        public async Task<bool> CancelarContribuyenteServicioAsync(int contribuyenteServicioId)
         {
-            var suscripcion = await _dbService.GetByIdAsync(suscripcionId);
+            var contribuyenteServicio = await _dbService.GetByIdAsync(contribuyenteServicioId);
             
-            if (suscripcion == null || suscripcion.FechaFin != null)
+            if (contribuyenteServicio == null || contribuyenteServicio.FechaFin != null)
             {
-                return false;
+                return false; // No existe o ya estaba cancelado
             }
 
-            suscripcion.FechaFin = DateTime.Now;
+            contribuyenteServicio.FechaFin = DateTime.Now;
             
-            await _dbService.UpdateAsync(suscripcion);
+            await _dbService.UpdateAsync(contribuyenteServicio);
             return true;
         }
 
-        // --- MÉTODOS DE LECTURA (SIN LÓGICA, SOLO PASAMANOS) ---
+        // --- MÉTODOS DE LECTURA (PASAMANOS) ---
 
-        public async Task<ContribuyenteServicio?> GetSuscripcionByIdAsync(int id)
+        public async Task<ContribuyenteServicio?> GetContribuyenteServicioByIdAsync(int id)
         {
             return await _dbService.GetByIdAsync(id);
         }
 
-        public async Task<IEnumerable<ContribuyenteServicio>> GetAllSuscripcionesAsync()
+        public async Task<IEnumerable<ContribuyenteServicio>> GetAllContribuyenteServiciosAsync()
         {
             return await _dbService.GetAllAsync();
         }
 
-        public async Task<IEnumerable<ContribuyenteServicio>> GetSuscripcionesPorContribuyenteAsync(int contribuyenteId)
+        public async Task<IEnumerable<ContribuyenteServicio>> GetContribuyenteServiciosPorContribuyenteAsync(int contribuyenteId)
         {
             return await _dbService.GetByContribuyenteIdAsync(contribuyenteId);
         }
