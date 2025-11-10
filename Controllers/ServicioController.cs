@@ -22,7 +22,7 @@ public class ServicioController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ServicioDto>> GetByIdAsync(int id)  // ✅ NOMBRE IMPORTANTE
+    public async Task<ActionResult<ServicioDto>> GetByIdAsync(int id)  
     {
         var s = await _service.GetByIdAsync(id);
         if (s == null) return NotFound();
@@ -33,11 +33,12 @@ public class ServicioController : ControllerBase
     public async Task<ActionResult<ServicioDto>> CreateAsync(ServicioCreateDto dto)
     {
         var created = await _service.CreateAsync(dto);
-        return CreatedAtAction(
-            nameof(GetByIdAsync),           // ✅ Debe coincidir exactamente
-            new { id = created.Id },        // ✅ Parámetro de ruta
-            created                          // ✅ Body de respuesta
-        );
+        
+        // Opción 1: Usar el nombre de ruta explícito
+        return CreatedAtRoute("GetServicioById", new { id = created.Id }, created);
+        
+        // Opción 2: Si sigue fallando, usar esta alternativa simple
+        // return Created($"/api/servicio/{created.Id}", created);
     }
 
     [HttpPut("{id}")]
