@@ -23,6 +23,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 1. Registra el HttpClient (NECESARIO para llamar a otras APIs)
+builder.Services.AddHttpClient();
+
+// 2. Registra tu IBoletaService (que ya tenías)
+builder.Services.AddScoped<IBoletaService, BoletaService>(); 
+
+// 3. Registra el nuevo IPagoService
+builder.Services.AddScoped<IPagoService, PagoService>();
 
 var app = builder.Build();
 

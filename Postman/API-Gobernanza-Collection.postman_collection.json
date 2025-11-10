@@ -1,0 +1,163 @@
+{
+  "info": {
+    "_postman_id": "2d7c2f7e-91d5-4c13-a2d4-col-api-gob",
+    "name": "API Gobernanza Digital",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección de endpoints de la API Gobernanza Digital"
+  },
+  "item": [
+    {
+      "name": "Servicio",
+      "description": "Endpoints CRUD de Servicio",
+      "item": [
+        {
+          "name": "Listar Servicios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/servicio", "host": ["{{baseUrl}}"], "path": ["api","servicio"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Servicio por Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/servicio/{{servicioId}}", "host": ["{{baseUrl}}"], "path": ["api","servicio","{{servicioId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Servicio",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Recoleccion Residuos\",\n  \"descripcion\": \"Servicio municipal\",\n  \"montoBase\": 150.00,\n  \"frecuenciaId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/servicio", "host": ["{{baseUrl}}"], "path": ["api","servicio"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Servicio",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{servicioId}},\n  \"nombre\": \"Recoleccion Residuos\",\n  \"descripcion\": \"Servicio municipal actualizado\",\n  \"montoBase\": 160.00,\n  \"frecuenciaId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/servicio/{{servicioId}}", "host": ["{{baseUrl}}"], "path": ["api","servicio","{{servicioId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Servicio",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/servicio/{{servicioId}}", "host": ["{{baseUrl}}"], "path": ["api","servicio","{{servicioId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contribuyente",
+      "description": "Endpoints CRUD de Contribuyente",
+      "item": [
+        {
+          "name": "Listar Contribuyentes",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/contribuyente", "host": ["{{baseUrl}}"], "path": ["api","contribuyente"] } },
+          "response": []
+        },
+        {
+          "name": "Obtener Contribuyente por Id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/contribuyente/{{contribuyenteId}}", "host": ["{{baseUrl}}"], "path": ["api","contribuyente","{{contribuyenteId}}"] } },
+          "response": []
+        },
+        {
+          "name": "Crear Contribuyente",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Perez\",\n  \"razonSocial\": null,\n  \"identificacion\": \"DNI-123\",\n  \"email\": \"juan@example.com\",\n  \"domicilio\": \"Calle 123\",\n  \"tipoId\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/contribuyente", "host": ["{{baseUrl}}"], "path": ["api","contribuyente"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Contribuyente",
+            "request": {
+              "method": "PUT",
+              "header": [ {"key":"Content-Type","value":"application/json"} ],
+              "body": { "mode": "raw", "raw": "{\n  \"id\": {{contribuyenteId}},\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Perez\",\n  \"razonSocial\": null,\n  \"identificacion\": \"DNI-123\",\n  \"email\": \"juan@example.com\",\n  \"domicilio\": \"Calle 123\",\n  \"tipoId\": 1\n}" },
+              "url": { "raw": "{{baseUrl}}/api/contribuyente/{{contribuyenteId}}", "host": ["{{baseUrl}}"], "path": ["api","contribuyente","{{contribuyenteId}}"] }
+            },
+            "response": []
+        },
+        {
+          "name": "Eliminar Contribuyente",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/contribuyente/{{contribuyenteId}}", "host": ["{{baseUrl}}"], "path": ["api","contribuyente","{{contribuyenteId}}"] } },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Boleta",
+      "description": "Endpoints CRUD de Boleta y generación",
+      "item": [
+        {
+          "name": "Listar Boletas",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/boleta", "host": ["{{baseUrl}}"], "path": ["api","boleta"] } },
+          "response": []
+        },
+        {
+          "name": "Obtener Boleta por Id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/boleta/{{boletaId}}", "host": ["{{baseUrl}}"], "path": ["api","boleta","{{boletaId}}"] } },
+          "response": []
+        },
+        {
+          "name": "Crear Boleta",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "body": { "mode": "raw", "raw": "{\n  \"contribuyenteServicioId\": 1,\n  \"periodoId\": 1,\n  \"montoTotal\": 1200.50,\n  \"estadoId\": 1,\n  \"fechaEmision\": \"2025-11-10T00:00:00Z\",\n  \"fechaVencimiento\": \"2025-11-20T00:00:00Z\",\n  \"codigoPagoElectronico\": \"ABC123DEF456\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/boleta", "host": ["{{baseUrl}}"], "path": ["api","boleta"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Boleta",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": {{boletaId}},\n  \"contribuyenteServicioId\": 1,\n  \"periodoId\": 1,\n  \"montoTotal\": 1400.75,\n  \"estadoId\": 1,\n  \"fechaEmision\": \"2025-11-10T00:00:00Z\",\n  \"fechaVencimiento\": \"2025-11-22T00:00:00Z\",\n  \"codigoPagoElectronico\": \"ABC123DEF456\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/boleta/{{boletaId}}", "host": ["{{baseUrl}}"], "path": ["api","boleta","{{boletaId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Boleta",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/boleta/{{boletaId}}", "host": ["{{baseUrl}}"], "path": ["api","boleta","{{boletaId}}"] } },
+          "response": []
+        },
+        {
+          "name": "Generar Boletas por Periodo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/boleta/generar?idPeriodo={{periodoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","boleta","generar"],
+              "query": [ { "key": "idPeriodo", "value": "{{periodoId}}" } ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": []
+}
